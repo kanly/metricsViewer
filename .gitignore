@@ -1,0 +1,13 @@
+.*
+!.gitignore
+
+# IntelliJ
+/*.iml
+/*.ipr
+/*.iws
+
+# Maven
+/target/
+
+#Vaadin widgetsets
+src/main/webapp/VAADIN/

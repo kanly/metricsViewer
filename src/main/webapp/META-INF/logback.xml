@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<configuration scan="true">
+    <define name="log.dir" class="it.posteitaliane.omp.metric.utils.LogDirPropertyDefiner"/>
+
+    <appender name="console" class="ch.qos.logback.core.ConsoleAppender">
+        <encoder>
+            <pattern>%highlight(%-5p) [%d{ISO8601}] %c: %m%n%ex</pattern>
+        </encoder>
+    </appender>
+
+    <appender name="file" class="ch.qos.logback.core.FileAppender">
+        <file>${log.dir}/app.log</file>
+        <encoder>
+            <pattern>%-5p [%d{ISO8601}] %c: %m%n%ex</pattern>
+        </encoder>
+    </appender>
+
+    <logger name="it.posteitaliane.omp" level="TRACE"/>
+
+    <root level="INFO">
+        <appender-ref ref="console"/>
+        <appender-ref ref="file"/>
+    </root>
+</configuration>
