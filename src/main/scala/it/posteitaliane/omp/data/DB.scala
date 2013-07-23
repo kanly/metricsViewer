@@ -1,0 +1,124 @@
+package it.posteitaliane.omp.data
+
+
+import org.neo4j.graphdb.factory.GraphDatabaseFactory
+import org.neo4j.kernel.impl.util.FileUtils
+import java.io.File
+import org.neo4j.graphdb.{Transaction, Relationship, RelationshipType, Node}
+import com.typesafe.scalalogging.slf4j.Logging
+import org.neo4j.graphdb.index.Index
+
+private object DAO {
+  val dbPath = "target/data"
+  val graphDB = new GraphDatabaseFactory().newEmbeddedDatabase(dbPath)
+  Runtime.getRuntime.addShutdownHook(ShutdownHook)
+}
+
+private object ShutdownHook extends Thread {
+  override def run() {
+    DAO.graphDB.shutdown()
+  }
+}
+
+trait GraphDB extends Logging {
+  private val db = DAO.graphDB
+  private var tx: Option[Transaction] = None
+  private lazy val indexManager = db.index()
+
+  def clearDB {
+    FileUtils.deleteRecursively(new File(DAO.dbPath))
+  }
+
+  def createNode(properties: Map[String, AnyRef] = Map()): Node = {
+    val node = db.createNode()
+    properties.foreach {
+      case (key, value) => node.setProperty(key, value)
+    }
+    node
+  }
+
+  def createOrLoadNode(index: MWIndex, properties: Map[String, String]):Node= {
+    val currIndex: Index[Node] = indexFor(index)
+    val hits=currIndex.get(index.key,index.value)
+    hits.size() match {
+      case 0 => {
+        val node = createNode(properties)
+        currIndex.add(node,index.key,index.value)
+        node
+      }
+      case 1 => hits.getSingle
+      case x => {
+        logger.warn(s"${x} element for index ${index.toString}")
+        hits.getSingle
+      }
+    }
+  }
+
+
+  def addRelationship(firstNode: Node, secondNode: Node, relationshipType: RelTypes, properties: Map[String, AnyRef] = Map()): Relationship = {
+    val relationship = firstNode.createRelationshipTo(secondNode, relationshipType)
+    properties.foreach {
+      case (key, value) => relationship.setProperty(key, value)
+    }
+    relationship
+  }
+
+  def indexFor(index: MWIndex): Index[Node] = {
+    indexManager.forNodes(index.key)
+  }
+
+  def beginTx {
+    tx = Some(db.beginTx())
+  }
+
+  def successTx {
+    tx match {
+      case Some(transaction) => transaction.success()
+      case None => logger.warn("Invoked success on an unexistent transaction")
+    }
+  }
+
+  def finishTx {
+    tx match {
+      case Some(transaction) => {
+        transaction.finish()
+        tx = None
+      }
+      case None => logger.warn("Invoked finish on an unexistent transaction")
+    }
+  }
+
+}
+
+sealed abstract class MWIndex(indexName: String, v: AnyRef) {
+  val key = indexName
+  val value = v
+}
+
+case class Request(request: String) extends MWIndex("request", request)
+
+case class Method(methodName: String) extends MWIndex("method",methodName)
+
+case class Service(serviceName: String) extends MWIndex("service",serviceName)
+
+case class Frazionario(codice: String) extends MWIndex("frazionario",codice)
+
+case class Pdl(codice: String) extends MWIndex("pdl",codice)
+
+case class Error(codice: String) extends MWIndex("error",codice)
+
+sealed abstract class RelTypes(relationshipName: String) extends RelationshipType {
+  def name = relationshipName
+}
+
+case object Execute extends RelTypes("Execute")
+
+case object ExecutedBy extends RelTypes("ExecutedBy")
+
+case object Belong extends RelTypes("Belong")
+
+case object Own extends RelTypes("Own")
+
+case object RequestedBy extends RelTypes("RequestedBy")
+case object ThrownBy extends RelTypes("ThrownBy")
+case object Throw extends RelTypes("Throw")
