@@ -6,6 +6,6 @@ import com.vaadin.server.VaadinServlet;
 import javax.servlet.annotation.WebServlet;
 
 @WebServlet(value = "/*", asyncSupported = true)
-@VaadinServletConfiguration(productionMode = false, ui = Application.class, widgetset = "it.posteitaliane.omp.UI.AppWidgetSet")
-public class ApplicationServlet  extends VaadinServlet {
+@VaadinServletConfiguration(productionMode = false, ui = it.posteitaliane.omp.scalaUI.Application.class, widgetset = "it.posteitaliane.omp.UI.AppWidgetSet")
+public class ApplicationServlet extends VaadinServlet {
 }
