@@ -1,10 +1,10 @@
-package it.posteitaliane.omp.scalaUI.view
+package it.posteitaliane.omp.UI.view
 
 import com.vaadin.ui.{Label, Layout}
 import com.vaadin.navigator.View
 import com.vaadin.navigator.ViewChangeListener.ViewChangeEvent
 import com.typesafe.scalalogging.slf4j.Logging
-import it.posteitaliane.omp.scalaUI.{CustomTheme, Views}
+import it.posteitaliane.omp.UI.{CustomTheme, Views}
 
 trait BaseView extends View with Logging {
   this: Layout =>

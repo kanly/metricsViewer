@@ -1,4 +1,4 @@
-package it.posteitaliane.omp.scalaUI.view
+package it.posteitaliane.omp.UI.view
 
 import com.vaadin.ui.{Notification, Upload, VerticalLayout}
 import com.vaadin.navigator.ViewChangeListener.ViewChangeEvent

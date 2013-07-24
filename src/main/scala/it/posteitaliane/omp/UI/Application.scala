@@ -1,4 +1,4 @@
-package it.posteitaliane.omp.scalaUI
+package it.posteitaliane.omp.UI
 
 import com.vaadin.annotations.{VaadinServletConfiguration, Theme}
 import com.vaadin.ui.{UI, VerticalLayout, VerticalSplitPanel}
@@ -47,7 +47,7 @@ class Application extends UI with Logging {
 }
 
 @WebServlet(value = Array("/*"), asyncSupported = true)
-@VaadinServletConfiguration(productionMode = false, ui = classOf[Application], widgetset = "it.posteitaliane.omp.scalaUI.AppWidgetSet")
+@VaadinServletConfiguration(productionMode = false, ui = classOf[Application], widgetset = "it.posteitaliane.omp.UI.AppWidgetSet")
 class ApplicationServlet extends VaadinServlet
 
 object CustomTheme {

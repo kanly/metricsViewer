@@ -1,9 +1,9 @@
-package it.posteitaliane.omp.scalaUI
+package it.posteitaliane.omp.UI
 
 import com.vaadin.ui.MenuBar
 import com.vaadin.navigator.Navigator
 import com.vaadin.ui.MenuBar.Command
-import it.posteitaliane.omp.scalaUI.view.{MetricsVIew, HomeView, BaseView}
+import it.posteitaliane.omp.UI.view.{MetricsVIew, HomeView, BaseView}
 import com.vaadin.navigator
 
 class Menu(navigator: Navigator) extends MenuBar {
