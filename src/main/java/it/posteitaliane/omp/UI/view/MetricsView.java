@@ -50,7 +50,7 @@ public class MetricsView extends BaseView<VerticalLayout> {
                 log.info("creating stream");
                 return new FileOutputStream(TEMPORARY_FILE.apply(filename));
             } catch (IOException e) {
-                new Notification("Could not open file<br/>", e.getMessage(), Notification.Type.ERROR_MESSAGE)
+                new Notification("Could not open file <br/>", e.getMessage(), Notification.Type.ERROR_MESSAGE)
                         .show(Page.getCurrent());
                 return null;
             }
@@ -58,10 +58,9 @@ public class MetricsView extends BaseView<VerticalLayout> {
 
         @Override
         public void uploadSucceeded(Upload.SucceededEvent succeededEvent) {
-            new Notification("Upload succeeded to " + System.getProperty("java.io.tmpdir") + "<br/>", Notification.Type.TRAY_NOTIFICATION)
+            new Notification("Upload succeeded to " + System.getProperty("java.io.tmpdir"), Notification.Type.TRAY_NOTIFICATION)
                     .show(Page.getCurrent());
-            // TODO raise event to start post-upload tasks
-            log.info("upload successful");
+
             OMPSystem.uploadedFile(TEMPORARY_FILE.apply(filename));
         }
     }
