@@ -4,15 +4,14 @@ import com.vaadin.ui.{Notification, Upload, VerticalLayout}
 import com.vaadin.navigator.ViewChangeListener.ViewChangeEvent
 import java.io.{IOException, FileOutputStream, OutputStream}
 import com.vaadin.server.Page
-import it.posteitaliane.omp.actor.OMPSystem
+import it.posteitaliane.omp.bl.OMPSystem
 import scala.Predef.String
 
-class MetricsVIew extends VerticalLayout with BaseView {
+class MetricsView extends VerticalLayout with BaseView {
   setSizeFull()
   val uploadReceiver = new MetricsHistoryUploader
   val upload = new Upload("Upload Metrics history file.", uploadReceiver)
   upload.addSucceededListener(uploadReceiver)
-
 
   addComponent(upload)
 

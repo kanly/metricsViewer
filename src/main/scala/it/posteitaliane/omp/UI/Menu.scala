@@ -3,7 +3,7 @@ package it.posteitaliane.omp.UI
 import com.vaadin.ui.MenuBar
 import com.vaadin.navigator.Navigator
 import com.vaadin.ui.MenuBar.Command
-import it.posteitaliane.omp.UI.view.{MetricsVIew, HomeView, BaseView}
+import it.posteitaliane.omp.UI.view.{MetricsView, HomeView, BaseView}
 import com.vaadin.navigator
 
 class Menu(navigator: Navigator) extends MenuBar {
@@ -22,7 +22,7 @@ object Views {
   val HomeView = View(classOf[HomeView], "home", "index")
   val views: List[View] = List(
     HomeView,
-    View(classOf[MetricsVIew], "metrics", "Metrics")
+    View(classOf[MetricsView], "metrics", "Metrics")
   )
 
   def fromType(clazz: Class[_ <: BaseView]) = {
