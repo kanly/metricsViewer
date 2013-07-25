@@ -1,11 +1,11 @@
-package it.posteitaliane.omp.actor
+package it.posteitaliane.omp.bl
 
 import akka.actor.{Props, ActorRef, Actor}
-import it.posteitaliane.omp.actor.MetricViewer.Uploaded
-import it.posteitaliane.omp.actor.FileReader.{NewMetric, ProcessFile}
+import it.posteitaliane.omp.bl.MetricViewer.Uploaded
+import it.posteitaliane.omp.bl.FileReader.{NewMetric, ProcessFile}
 import com.typesafe.scalalogging.slf4j.Logging
-import it.posteitaliane.omp.actor.MetricGrapher.Save
-import it.posteitaliane.omp.actor.ProductionEventSource.RegisterListener
+import it.posteitaliane.omp.bl.MetricGrapher.Save
+import it.posteitaliane.omp.bl.ProductionEventSource.RegisterListener
 
 class MetricViewer extends Actor with Logging {
   this: EventSource =>

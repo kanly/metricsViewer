@@ -1,4 +1,4 @@
-package it.posteitaliane.omp.actor
+package it.posteitaliane.omp.bl
 
 import akka.actor.{Actor, ActorRef}
 

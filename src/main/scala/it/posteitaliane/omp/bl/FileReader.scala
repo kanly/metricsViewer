@@ -1,19 +1,19 @@
-package it.posteitaliane.omp.actor
+package it.posteitaliane.omp.bl
 
 import akka.actor.{Props, ActorRef, Actor}
-import it.posteitaliane.omp.actor.FileReader._
+import it.posteitaliane.omp.bl.FileReader._
 import java.io.{File, RandomAccessFile}
 import com.typesafe.scalalogging.slf4j.Logging
 import com.fasterxml.jackson.module.scala.DefaultScalaModule
 import com.fasterxml.jackson.databind.{DeserializationFeature, ObjectMapper}
-import it.posteitaliane.omp.actor.FileReader.FileParsed
-import it.posteitaliane.omp.actor.LineProcessor.LineRead
-import it.posteitaliane.omp.actor.LineProcessor.Line
-import it.posteitaliane.omp.actor.ProductionEventSource.RegisterListener
-import it.posteitaliane.omp.actor.FileReader.ProcessFile
+import it.posteitaliane.omp.bl.FileReader.FileParsed
+import it.posteitaliane.omp.bl.LineProcessor.LineRead
+import it.posteitaliane.omp.bl.LineProcessor.Line
+import it.posteitaliane.omp.bl.ProductionEventSource.RegisterListener
+import it.posteitaliane.omp.bl.FileReader.ProcessFile
 import it.posteitaliane.omp.data.Metric
-import it.posteitaliane.omp.actor.FileReader.NewMetric
-import it.posteitaliane.omp.actor.FileReader.ProcessLine
+import it.posteitaliane.omp.bl.FileReader.NewMetric
+import it.posteitaliane.omp.bl.FileReader.ProcessLine
 import scala.Some
 
 

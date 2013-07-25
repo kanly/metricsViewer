@@ -1,10 +1,10 @@
-package it.posteitaliane.omp.actor
+package it.posteitaliane.omp.bl
 
 import akka.actor.{Props, Actor}
 import it.posteitaliane.omp.data._
 import com.typesafe.scalalogging.slf4j.Logging
 import it.posteitaliane.omp.data.Metric
-import it.posteitaliane.omp.actor.MetricGrapher.Save
+import it.posteitaliane.omp.bl.MetricGrapher.Save
 import it.posteitaliane.omp.data.Method
 
 class MetricGrapher extends Actor with Logging with GraphDB {

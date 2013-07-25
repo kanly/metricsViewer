@@ -1,7 +1,7 @@
-package it.posteitaliane.omp.actor
+package it.posteitaliane.omp.bl
 
 import akka.actor.ActorSystem
-import it.posteitaliane.omp.actor.MetricViewer.Uploaded
+import it.posteitaliane.omp.bl.MetricViewer.Uploaded
 import com.typesafe.scalalogging.slf4j.Logging
 
 object OMPSystem extends Logging{
