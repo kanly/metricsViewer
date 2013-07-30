@@ -7,8 +7,8 @@ import com.typesafe.scalalogging.slf4j.Logging
 import com.fasterxml.jackson.module.scala.DefaultScalaModule
 import com.fasterxml.jackson.databind.{DeserializationFeature, ObjectMapper}
 import it.posteitaliane.omp.bl.FileReader.FileParsed
-import it.posteitaliane.omp.bl.LineProcessor.LineRead
-import it.posteitaliane.omp.bl.LineProcessor.Line
+import it.posteitaliane.omp.bl.JSONProcessor.LineRead
+import it.posteitaliane.omp.bl.JSONProcessor.Line
 import it.posteitaliane.omp.bl.ProductionEventSource.RegisterListener
 import it.posteitaliane.omp.bl.FileReader.ProcessFile
 import it.posteitaliane.omp.data.Metric
@@ -38,7 +38,7 @@ class FileReader extends Actor with Logging {
   }
 
   override def preStart() {
-    lineProcessor = context.actorOf(LineProcessor.props)
+    lineProcessor = context.actorOf(JSONProcessor.props)
     lineProcessor ! RegisterListener(self)
   }
 
@@ -70,29 +70,4 @@ class Reader(filename: String) {
   }
 }
 
-class LineProcessor extends Actor with Logging {
-  this: EventSource =>
 
-  val mapper = new ObjectMapper()
-  mapper.registerModule(DefaultScalaModule)
-  mapper.disable(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES)
-
-  def receive = eventSourceReceiver orElse {
-    case Line(line) => {
-      val value: Metric = mapper.readValue(line, classOf[Metric])
-      sendEvent(LineRead(value))
-    }
-
-  }
-
-}
-
-object LineProcessor {
-
-  case class Line(line: String)
-
-  case class LineRead(line: Metric)
-
-  def props = Props(new LineProcessor with ProductionEventSource)
-
-}

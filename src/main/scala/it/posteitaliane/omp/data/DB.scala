@@ -7,6 +7,7 @@ import java.io.File
 import org.neo4j.graphdb.{Transaction, Relationship, RelationshipType, Node}
 import com.typesafe.scalalogging.slf4j.Logging
 import org.neo4j.graphdb.index.Index
+import org.neo4j.cypher.ExecutionEngine
 
 private object DAO {
   val dbPath = "target/data"
@@ -24,8 +25,9 @@ trait GraphDB extends Logging {
   private val db = DAO.graphDB
   private var tx: Option[Transaction] = None
   private lazy val indexManager = db.index()
+  private val engine=new ExecutionEngine(db)
 
-  def clearDB {
+  def clearDB() {
     FileUtils.deleteRecursively(new File(DAO.dbPath))
   }
 
@@ -37,13 +39,14 @@ trait GraphDB extends Logging {
     node
   }
 
-  def createOrLoadNode(index: MWIndex, properties: Map[String, String]):Node= {
+  def createOrLoadNode(index: MWIndex, properties: Map[String, String], onCreate: Node => Unit = Node => ()): Node = {
     val currIndex: Index[Node] = indexFor(index)
-    val hits=currIndex.get(index.key,index.value)
+    val hits = currIndex.get(index.key, index.value)
     hits.size() match {
       case 0 => {
         val node = createNode(properties)
-        currIndex.add(node,index.key,index.value)
+        currIndex.add(node, index.key, index.value)
+        onCreate(node)
         node
       }
       case 1 => hits.getSingle
@@ -63,22 +66,26 @@ trait GraphDB extends Logging {
     relationship
   }
 
+  def executeQuery(query:String) = {
+    engine.execute(query)
+  }
+
   def indexFor(index: MWIndex): Index[Node] = {
     indexManager.forNodes(index.key)
   }
 
-  def beginTx {
+  def beginTx() {
     tx = Some(db.beginTx())
   }
 
-  def successTx {
+  def successTx() {
     tx match {
       case Some(transaction) => transaction.success()
       case None => logger.warn("Invoked success on an unexistent transaction")
     }
   }
 
-  def finishTx {
+  def finishTx() {
     tx match {
       case Some(transaction) => {
         transaction.finish()
@@ -95,17 +102,15 @@ sealed abstract class MWIndex(indexName: String, v: AnyRef) {
   val value = v
 }
 
-case class Request(request: String) extends MWIndex("request", request)
+case class RequestIndex(request: String) extends MWIndex("request", request)
 
-case class Method(methodName: String) extends MWIndex("method",methodName)
+case class MethodIndex(methodName: String) extends MWIndex("method", methodName)
 
-case class Service(serviceName: String) extends MWIndex("service",serviceName)
+case class ServiceIndex(serviceName: String) extends MWIndex("service", serviceName)
 
-case class Frazionario(codice: String) extends MWIndex("frazionario",codice)
+case class WorkStationIndex(frazionarioPdl: (String, String)) extends MWIndex("workstation", frazionarioPdl)
 
-case class Pdl(codice: String) extends MWIndex("pdl",codice)
-
-case class Error(codice: String) extends MWIndex("error",codice)
+case class ErrorIndex(code: String) extends MWIndex("error", code)
 
 sealed abstract class RelTypes(relationshipName: String) extends RelationshipType {
   def name = relationshipName
@@ -115,10 +120,6 @@ case object Execute extends RelTypes("Execute")
 
 case object ExecutedBy extends RelTypes("ExecutedBy")
 
-case object Belong extends RelTypes("Belong")
-
 case object Own extends RelTypes("Own")
 
-case object RequestedBy extends RelTypes("RequestedBy")
 case object ThrownBy extends RelTypes("ThrownBy")
-case object Throw extends RelTypes("Throw")

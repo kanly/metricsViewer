@@ -1,28 +1,47 @@
 package it.posteitaliane.omp.UI
 
-import com.vaadin.annotations.{VaadinServletConfiguration, Theme}
+import com.vaadin.annotations.Theme
 import com.vaadin.ui.{UI, VerticalLayout, VerticalSplitPanel}
 import com.vaadin.navigator.Navigator
 import com.vaadin.server.Sizeable.Unit
-import com.vaadin.server.{VaadinServlet, VaadinRequest}
+import com.vaadin.server.VaadinRequest
 import com.typesafe.scalalogging.slf4j.Logging
-import javax.servlet.annotation.WebServlet
+import akka.actor.ActorRef
+import akka.pattern.ask
+import it.posteitaliane.omp.UI.UIActor.NewSession
+import it.posteitaliane.omp.Metrics
+import scala.concurrent.{Future, Await}
+import scala.concurrent.duration._
+import akka.util.Timeout
 
 @Theme(CustomTheme.ThemeName)
 class Application extends UI with Logging {
+  implicit val askTimeout = Timeout(5.seconds)
   val mainLayout = new VerticalSplitPanel()
   val headerLayout = new VerticalLayout
   val contentLayout = new VerticalLayout
   val navigator = new Navigator(this, contentLayout)
+  logger.debug(s"Application.uiActor=${Application.uiActor}")
 
-  logger.info("Application created and... I am scala")
+  lazy val sessionActor = {
+    logger.debug(s"Application.uiActor=${Application.uiActor}")
+    val future: Future[ActorRef] = (Application.uiActor ? NewSession(this)).mapTo[ActorRef]
+    Await.result(future, 5.second)
+  }
 
   override def init(request: VaadinRequest) {
+    logger.debug("init")
     configureMainLayout()
     buildNavigator()
     addHeader()
     mainLayout.setSecondComponent(contentLayout)
     navigator.navigateTo(Views.HomeView.urlString)
+  }
+
+  override def close() {
+    logger.debug("closing")
+    super.close()
+    logger.debug("closed")
   }
 
   private def configureMainLayout() {
@@ -36,7 +55,7 @@ class Application extends UI with Logging {
 
   private def buildNavigator() {
     Views.views.foreach {
-      case View(viewType, _, urlStr) => navigator.addView(urlStr, viewType)
+      case View(viewType, _, urlStr, _) => navigator.addView(urlStr, viewType)
     }
   }
 
@@ -46,36 +65,14 @@ class Application extends UI with Logging {
   }
 }
 
-@WebServlet(value = Array("/*"), asyncSupported = true)
-@VaadinServletConfiguration(productionMode = false, ui = classOf[Application], widgetset = "it.posteitaliane.omp.UI.AppWidgetSet")
-class ApplicationServlet extends VaadinServlet
+object Application {
+  var uiActor: ActorRef = Metrics.sys.deadLetters
 
-object CustomTheme {
-  final val ViewTitle = "viewTitle"
+  def getCurrent = UI.getCurrent.asInstanceOf[Application]
 
-  /* FROM RUNO THEME */
-  final val ThemeName = "runo"
-  final val ButtonSmall = "small"
-  val ButtonBig = "big"
-  val ButtonDefault = "default"
-  val PanelLight = "light"
-  val TabsheetSmall = "light"
-  val SplitpanelReduced = "rounded"
-  val SplitpanelSmall = "small"
-  val LabelH1 = "h1"
-  val LabelH2 = "h2"
-  val LabelSmall = "small"
-  val LayoutDarker = "darker"
-  val CsslayoutShadow = "box-shadow"
-  val CssLayoutSelectable = "selectable"
-  val CssLayoutSelectableSelected = "selectable-selected"
-  val TextfieldSmall = "small"
-  val TableSmall = "small"
-  val TableBorderless = "borderless"
-  val AccordionLight = "light"
-  val WindowDialog = "dialog"
-  /* FROM BASE THEME */
-  val ButtonLink = "link"
-  val TreeConnectors = "connectors"
-  val Clip = "v-clip"
 }
+
+
+
+
+
