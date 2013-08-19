@@ -29,20 +29,20 @@ class MetricGrapher extends Actor with Logging with GraphDB {
     try {
       val requestNode = createRequestNode(metric)
 
-      val serviceNode = createOrLoadNode(ServiceIndex(metric.serviceName), Map("name" -> metric.serviceName))
+      val serviceNode = createOrLoadNode(ServiceIndex(metric.serviceName), Map(Keys.serviceName -> metric.serviceName))
 
-      val methodNode = createOrLoadNode(MethodIndex(metric.methodName), Map("name" -> metric.methodName),
+      val methodNode = createOrLoadNode(MethodIndex(metric.methodName), Map(Keys.methodName -> metric.methodName),
         onCreate = newMethodNode => addRelationship(serviceNode, newMethodNode, Own)
       )
 
-      val workstationNode = createOrLoadNode(WorkStationIndex((metric.frazionario, metric.pdl)), Map("frazionario" -> metric.frazionario, "pdl" -> metric.pdl))
+      val workstationNode = createOrLoadNode(WorkStationIndex((metric.frazionario, metric.pdl)), Map(Keys.workstationFrazionario -> metric.frazionario, Keys.workstationPdl -> metric.pdl))
 
       addRelationship(methodNode, requestNode, ExecutedBy)
       addRelationship(workstationNode, requestNode, Execute)
 
       if (!metric.success) {
-        val errorNode = createOrLoadNode(ErrorIndex(metric.errorCode), Map("code" -> metric.errorCode))
-        addRelationship(errorNode, requestNode, ThrownBy, Map("message" -> metric.errorMessage))
+        val errorNode = createOrLoadNode(ErrorIndex(metric.errorCode), Map(Keys.errorCode -> metric.errorCode))
+        addRelationship(errorNode, requestNode, ThrownBy, Map(Keys.thrownByMessage -> metric.errorMessage))
       }
 
       logger.debug(s"Successfully saved metric: ${metric.toString}")

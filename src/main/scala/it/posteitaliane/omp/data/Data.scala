@@ -1,5 +1,6 @@
 package it.posteitaliane.omp.data
 
+
 case class Metric(
                    id: Long,
                    layer: String,
@@ -26,7 +27,20 @@ case class Service(serviceName: String)
 case class Error(code: String)
 
 sealed trait Data
-case object  Workstation extends Data
-case object  Method extends Data
-case object  Service extends Data
-case object  Error extends Data
+
+case object Workstation extends Data
+
+case object Method extends Data
+
+case object Service extends Data
+
+case object Error extends Data
+
+object Keys {
+  val serviceName = "name"
+  val methodName = "name"
+  val workstationFrazionario = "frazionario"
+  val workstationPdl = "pdl"
+  val errorCode = "code"
+  val thrownByMessage = "message"
+}
