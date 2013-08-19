@@ -7,7 +7,8 @@ import java.io.File
 import org.neo4j.graphdb.{Transaction, Relationship, RelationshipType, Node}
 import com.typesafe.scalalogging.slf4j.Logging
 import org.neo4j.graphdb.index.Index
-import org.neo4j.cypher.ExecutionEngine
+import org.neo4j.cypher.javacompat.{ExecutionResult, ExecutionEngine}
+import scala.collection.JavaConverters._
 
 private object DAO {
   val dbPath = "target/data"
@@ -25,7 +26,7 @@ trait GraphDB extends Logging {
   private val db = DAO.graphDB
   private var tx: Option[Transaction] = None
   private lazy val indexManager = db.index()
-  private val engine=new ExecutionEngine(db)
+  private val engine = new ExecutionEngine(db)
 
   def clearDB() {
     FileUtils.deleteRecursively(new File(DAO.dbPath))
@@ -66,9 +67,11 @@ trait GraphDB extends Logging {
     relationship
   }
 
-  def executeQuery(query:String) = {
-    engine.execute(query)
+  def executeQuery(query: String): List[Map[String, AnyRef]] = {
+    asScala(engine.execute(query))
   }
+
+  private def asScala(execResult: ExecutionResult): List[Map[String, AnyRef]] = execResult.iterator().asScala.map(_.asScala.toMap).toList
 
   def indexFor(index: MWIndex): Index[Node] = {
     indexManager.forNodes(index.key)
