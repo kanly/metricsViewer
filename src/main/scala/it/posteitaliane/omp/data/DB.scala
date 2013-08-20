@@ -84,7 +84,7 @@ trait GraphDB extends Logging {
   def successTx() {
     tx match {
       case Some(transaction) => transaction.success()
-      case None => logger.warn("Invoked success on an unexistent transaction")
+      case None => logger.warn("Invoked success on an non-existent transaction")
     }
   }
 
@@ -94,7 +94,7 @@ trait GraphDB extends Logging {
         transaction.finish()
         tx = None
       }
-      case None => logger.warn("Invoked finish on an unexistent transaction")
+      case None => logger.warn("Invoked finish on an non-existent transaction")
     }
   }
 
