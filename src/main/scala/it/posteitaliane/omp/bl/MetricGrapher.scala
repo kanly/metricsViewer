@@ -5,14 +5,9 @@ import it.posteitaliane.omp.data._
 import com.typesafe.scalalogging.slf4j.Logging
 import it.posteitaliane.omp.bl.MetricGrapher._
 import it.posteitaliane.omp.bl.MetricGrapher.Save
-import it.posteitaliane.omp.data.MethodIndex
-import it.posteitaliane.omp.data.WorkStationIndex
-import it.posteitaliane.omp.data.ErrorIndex
 import it.posteitaliane.omp.data.Metric
-import it.posteitaliane.omp.data.ServiceIndex
 
 class MetricGrapher extends Actor with Logging with MetricQueries {
-
 
   def receive = {
     case Save(metric) => save(metric)
@@ -21,9 +16,6 @@ class MetricGrapher extends Actor with Logging with MetricQueries {
     case LoadServices => sender ! loadServices
     case LoadErrors => sender ! loadErrors
   }
-
-
-
 }
 
 object MetricGrapher {
@@ -38,6 +30,5 @@ object MetricGrapher {
   case object LoadServices
 
   case object LoadErrors
-
 
 }
