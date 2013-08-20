@@ -11,56 +11,18 @@ import it.posteitaliane.omp.data.ErrorIndex
 import it.posteitaliane.omp.data.Metric
 import it.posteitaliane.omp.data.ServiceIndex
 
-class MetricGrapher extends Actor with Logging with GraphDB {
+class MetricGrapher extends Actor with Logging with MetricQueries {
 
 
   def receive = {
     case Save(metric) => save(metric)
-    case LoadWorkstations => executeQuery( """START wor=node:workstation('*:*') RETURN wor""").foreach(record => {
-      logger.debug(record.toString())
-    })
-    case LoadMethods => executeQuery( """START met=node:method('*:*') RETURN met""")
-    case LoadServices => executeQuery( """START ser=node:service('*:*') RETURN ser""")
-    case LoadErrors => executeQuery( """START err=node:error('*:*') RETURN err""")
+    case LoadWorkstations => sender ! loadWorkstations
+    case LoadMethods => sender ! loadMethods
+    case LoadServices => sender ! loadServices
+    case LoadErrors => sender ! loadErrors
   }
 
-  def save(metric: Metric) {
-    beginTx()
-    try {
-      val requestNode = createRequestNode(metric)
 
-      val serviceNode = createOrLoadNode(ServiceIndex(metric.serviceName), Map(Keys.serviceName -> metric.serviceName))
-
-      val methodNode = createOrLoadNode(MethodIndex(metric.methodName), Map(Keys.methodName -> metric.methodName),
-        onCreate = newMethodNode => addRelationship(serviceNode, newMethodNode, Own)
-      )
-
-      val workstationNode = createOrLoadNode(WorkStationIndex((metric.frazionario, metric.pdl)), Map(Keys.workstationFrazionario -> metric.frazionario, Keys.workstationPdl -> metric.pdl))
-
-      addRelationship(methodNode, requestNode, ExecutedBy)
-      addRelationship(workstationNode, requestNode, Execute)
-
-      if (!metric.success) {
-        val errorNode = createOrLoadNode(ErrorIndex(metric.errorCode), Map(Keys.errorCode -> metric.errorCode))
-        addRelationship(errorNode, requestNode, ThrownBy, Map(Keys.thrownByMessage -> metric.errorMessage))
-      }
-
-      logger.debug(s"Successfully saved metric: ${metric.toString}")
-      successTx()
-    } catch {
-      case e: Exception => logger.warn(s"Cannot save metric: ${metric.toString}.", e)
-    } finally {
-      finishTx()
-    }
-  }
-
-  def createRequestNode(metric: Metric) = createNode(Map(
-    "request" -> metric.request,
-    "startTime" -> Long.box(metric.startTime),
-    "endTime" -> Long.box(metric.endTime),
-    "success" -> (if (metric.success) "OK" else "KO"),
-    "layer" -> metric.layer
-  ))
 
 }
 
