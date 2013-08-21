@@ -1,13 +1,22 @@
 package it.posteitaliane.omp.UI
 
-import akka.actor.{Props, Actor, ActorRef}
-import it.posteitaliane.omp.UI.SessionActor.{FileReady, GiveMeMyActor, ViewChange, Close}
+import scala.concurrent.ExecutionContext.Implicits.global
+import akka.actor.{Status, Props, Actor, ActorRef}
+import akka.pattern.ask
+import it.posteitaliane.omp.UI.SessionActor._
 import it.posteitaliane.omp.UI.view.BaseView
-import it.posteitaliane.omp.UI.UIActor.Get
-import it.posteitaliane.omp.data.Workstation
+import it.posteitaliane.omp.data.{Data, WorkstationData, DTO, Workstation}
 import com.typesafe.scalalogging.slf4j.Logging
+import it.posteitaliane.omp.UI.SessionActor.ViewChange
+import it.posteitaliane.omp.UI.UIActor.Get
+import it.posteitaliane.omp.UI.SessionActor.FileReady
+import it.posteitaliane.omp.UI.SessionActor.GiveMeMyActor
+import scala.util.{Failure, Success}
+import it.posteitaliane.omp.bl.{ProductionEventSource, EventSource}
 
 class SessionActor(ui: ActorRef, currApplication: Application) extends Actor with Logging {
+  this: EventSource =>
+
   implicit val me = this
   implicit val application = currApplication
   val actors = Views.views.zip(Views.views.map(view => new LazyViewActor(view))).toMap
@@ -19,16 +28,20 @@ class SessionActor(ui: ActorRef, currApplication: Application) extends Actor wit
     case ViewChange(next) => {
       logger.debug("changing view")
       context.become(handleView(next))
-      ui ! Get(Workstation)
+      ui ! Get(WorkstationData)
       logger.debug("changing view")
     }
     case GiveMeMyActor(view) => sender ! actors(Views.fromView(view).get).actor
     case FileReady(file) => ui ! UIActor.FileReady(file)
+    case LoadWorkstations => (ui ? Get(WorkstationData)).mapTo[List[Workstation]] onComplete {
+      case Success(r) => sendEvent(Updated[Workstation](WorkstationData, r))
+      case Failure(f) => sender ! Status.Failure(f)
+    }
   }
 }
 
 object SessionActor {
-  def props(ui: ActorRef, currApplication: Application) = Props(new SessionActor(ui, currApplication))
+  def props(ui: ActorRef, currApplication: Application) = Props(new SessionActor(ui, currApplication) with ProductionEventSource)
 
   def sessionName(app: Application) = s"session_${app.getUIId}"
 
@@ -39,6 +52,10 @@ object SessionActor {
   case class GiveMeMyActor(view: BaseView)
 
   case class FileReady(filename: String)
+
+  case object LoadWorkstations
+
+  case class Updated[T <: DTO](dataType: Data, data: List[T])
 
 }
 

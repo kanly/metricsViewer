@@ -76,9 +76,11 @@ object Mapper {
     Mapper.genericMapper(node => Error(getStringProperty(node, Keys.errorCode)))(key)
 
   def genericMapper[A](mapper: Node => A)(key: String)(record: Map[String, AnyRef]): A = {
-    case (record: Map[String, AnyRef]) => record(key) match {
-      case workstationNode: Node => mapper(workstationNode)
-      case _ => throw new UnsupportedOperationException("Unexpected type in query result")
+    record match {
+      case (record: Map[String, AnyRef]) => record(key) match {
+        case workstationNode: Node => mapper(workstationNode)
+        case _ => throw new UnsupportedOperationException("Unexpected type in query result")
+      }
     }
   }
 

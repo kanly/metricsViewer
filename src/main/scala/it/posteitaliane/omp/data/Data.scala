@@ -15,26 +15,27 @@ case class Metric(
                    errorMessage: String,
                    errorCode: String)
 
+trait DTO
 
-case class Workstation(frazionario: String, pdl: String)
+case class Workstation(frazionario: String, pdl: String) extends DTO
 
-case class Request(request: String)
+case class Request(request: String) extends DTO
 
-case class Method(methodName: String)
+case class Method(methodName: String) extends DTO
 
-case class Service(serviceName: String)
+case class Service(serviceName: String) extends DTO
 
-case class Error(code: String)
+case class Error(code: String) extends DTO
 
 sealed trait Data
 
-case object Workstation extends Data
+case object WorkstationData extends Data
 
-case object Method extends Data
+case object MethodData extends Data
 
-case object Service extends Data
+case object ServiceData extends Data
 
-case object Error extends Data
+case object ErrorData extends Data
 
 object Keys {
   val serviceName = "name"

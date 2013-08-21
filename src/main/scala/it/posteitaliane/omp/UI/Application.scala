@@ -1,6 +1,6 @@
 package it.posteitaliane.omp.UI
 
-import com.vaadin.annotations.Theme
+import com.vaadin.annotations.{Push, Theme}
 import com.vaadin.ui.{UI, VerticalLayout, VerticalSplitPanel}
 import com.vaadin.navigator.Navigator
 import com.vaadin.server.Sizeable.Unit
@@ -15,6 +15,7 @@ import scala.concurrent.duration._
 import akka.util.Timeout
 
 @Theme(CustomTheme.ThemeName)
+@Push
 class Application extends UI with Logging {
   implicit val askTimeout = Timeout(5.seconds)
   val mainLayout = new VerticalSplitPanel()
