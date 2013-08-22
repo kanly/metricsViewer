@@ -21,21 +21,25 @@ class SessionActor(ui: ActorRef, currApplication: Application) extends Actor wit
   implicit val application = currApplication
   val actors = Views.views.zip(Views.views.map(view => new LazyViewActor(view))).toMap
 
-  def receive = handleView(Views.HomeView)
+  def receive =  eventSourceReceiver orElse handleView(Views.HomeView)
 
   def handleView(currentView: View): Receive = {
     case Close => context.stop(self)
     case ViewChange(next) => {
       logger.debug("changing view")
-      context.become(handleView(next))
-      ui ! Get(WorkstationData)
-      logger.debug("changing view")
+      context.become(eventSourceReceiver orElse handleView(next))
     }
     case GiveMeMyActor(view) => sender ! actors(Views.fromView(view).get).actor
     case FileReady(file) => ui ! UIActor.FileReady(file)
     case LoadWorkstations => (ui ? Get(WorkstationData)).mapTo[List[Workstation]] onComplete {
-      case Success(r) => sendEvent(Updated[Workstation](WorkstationData, r))
-      case Failure(f) => sender ! Status.Failure(f)
+      case Success(r) => {
+        sendEvent(Updated[Workstation](WorkstationData, r))
+        logger.debug("Workstations loaded")
+      }
+      case Failure(f) => {
+        sender ! Status.Failure(f)
+        logger.debug(s"Workstations loading failed $f")
+      }
     }
   }
 }

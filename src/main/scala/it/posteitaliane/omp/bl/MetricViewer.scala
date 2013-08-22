@@ -28,7 +28,11 @@ class MetricViewer extends Actor with Logging {
   def receive = eventSourceReceiver orElse {
     case NewMetric(metric) => grapher ! Save(metric)
     case FileReady(filename) => reader ! ProcessFile(filename)
-    case ListOf(WorkstationData) => (grapher ? LoadWorkstations).pipeTo(sender)
+    case ListOf(WorkstationData) => {
+      logger.debug("MetricsViewer: list of workstations")
+      (grapher ? LoadWorkstations).pipeTo(sender)
+      logger.debug("MetricsViewer: list of workstations done")
+    }
     case ListOf(ErrorData) => grapher ! LoadErrors
     case ListOf(MethodData) => grapher ! LoadMethods
     case ListOf(ServiceData) => grapher ! LoadServices

@@ -8,11 +8,11 @@ import akka.actor.{Props, Actor}
 import it.posteitaliane.omp.UI.{SessionActor, Application}
 import com.typesafe.scalalogging.slf4j.Logging
 import it.posteitaliane.omp.data.{WorkstationData, Workstation}
-import it.posteitaliane.omp.UI.view.MetricsActor.FileUploaded
-import it.posteitaliane.omp.UI.view.MetricsActor.RegisterView
+import it.posteitaliane.omp.UI.view.MetricsActor.{RefreshWs, FileUploaded, RegisterView}
 import com.vaadin.data.Property.{ValueChangeEvent, ValueChangeListener}
 import it.posteitaliane.omp.bl.ProductionEventSource.RegisterListener
-import it.posteitaliane.omp.UI.SessionActor.Updated
+import it.posteitaliane.omp.UI.SessionActor.{LoadWorkstations, Updated}
+import com.vaadin.ui.Button.{ClickEvent, ClickListener}
 
 class MetricsView extends VerticalLayout with BaseView {
   actor ! MetricsActor.RegisterView(this)
@@ -35,6 +35,15 @@ class MetricsView extends VerticalLayout with BaseView {
     }
   })
   addComponent(workstationsSelect)
+
+  val refreshWs=new Button("refresh")
+  refreshWs.addClickListener(new ClickListener {
+    def buttonClick(event: ClickEvent) {
+      actor ! RefreshWs
+    }
+  })
+
+  addComponent(refreshWs)
 
   def onEnter(event: ViewChangeEvent) {}
 
@@ -89,6 +98,7 @@ class MetricsActor(app: Application) extends Actor with Logging {
       logger.debug(s"Uploaded file [$file]. SessionActor: [${app.sessionActor}")
       app.sessionActor ! SessionActor.FileReady(file)
     }
+    case RefreshWs => app.sessionActor ! LoadWorkstations
     case Updated(WorkstationData,wStations:List[Workstation]) => view.updateWorkstations(app, wStations)
     case Updated(dataType,data) => logger.debug(s"Unmanaged updated data type: $dataType")
   }
@@ -105,5 +115,7 @@ object MetricsActor {
   case class FileUploaded(filename: String)
 
   case class RegisterView(view: MetricsView)
+
+  case object RefreshWs
 
 }

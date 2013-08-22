@@ -5,7 +5,7 @@ import akka.actor.{ActorRef, Props, Actor}
 import it.posteitaliane.omp.UI.UIActor.{Get, FileReady, NewSession}
 import it.posteitaliane.omp.bl.{ProductionEventSource, EventSource}
 import com.typesafe.scalalogging.slf4j.Logging
-import it.posteitaliane.omp.data.{DTO, Data}
+import it.posteitaliane.omp.data.Data
 import it.posteitaliane.omp.bl.MetricViewer.ListOf
 import it.posteitaliane.omp.Metrics
 import it.posteitaliane.omp.Metrics.GiveMeBE
@@ -22,7 +22,8 @@ class UIActor extends Actor with Logging {
   def receive = eventSourceReceiver orElse {
     case NewSession(app) => sender ! context.actorOf(SessionActor.props(self, app), SessionActor.sessionName(app))
     case FileReady(filename) => sendEvent(FileReady(filename))
-    case Get(data) => (be ? ListOf(data)).pipeTo(sender)
+    case Get(data) =>
+      (be ? ListOf(data)).pipeTo(sender)
   }
 
   override def preStart() {
