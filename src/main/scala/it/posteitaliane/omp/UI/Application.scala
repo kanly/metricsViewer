@@ -1,10 +1,10 @@
 package it.posteitaliane.omp.UI
 
 import com.vaadin.annotations.{Push, Theme}
-import com.vaadin.ui.{UI, VerticalLayout, VerticalSplitPanel}
+import com.vaadin.ui.{Notification, UI, VerticalLayout, VerticalSplitPanel}
 import com.vaadin.navigator.Navigator
 import com.vaadin.server.Sizeable.Unit
-import com.vaadin.server.VaadinRequest
+import com.vaadin.server.{Page, VaadinRequest}
 import com.typesafe.scalalogging.slf4j.Logging
 import akka.actor.ActorRef
 import akka.pattern.ask
@@ -63,6 +63,16 @@ class Application extends UI with Logging {
   private def addHeader() {
     headerLayout.addComponent(new Menu(navigator))
     mainLayout.setFirstComponent(headerLayout)
+  }
+
+  import Notification.Type.TRAY_NOTIFICATION
+
+  def notify(message: String, notificationType: Notification.Type = TRAY_NOTIFICATION) {
+    access(new Runnable {
+      def run() {
+        new Notification(message, notificationType).show(Page.getCurrent)
+      }
+    })
   }
 }
 
