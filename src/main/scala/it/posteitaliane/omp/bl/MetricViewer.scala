@@ -16,7 +16,7 @@ import it.posteitaliane.omp.bl.MetricGrapher.Save
 import it.posteitaliane.omp.bl.MetricViewer.ListOf
 import it.posteitaliane.omp.bl.FileReader.ProcessFile
 import it.posteitaliane.omp.bl.FileReader.NewMetric
-import it.posteitaliane.omp.UI.UIActor.FileReady
+import it.posteitaliane.omp.UI.UIActor.UploadingFile
 
 
 class MetricViewer extends Actor with Logging {
@@ -27,15 +27,11 @@ class MetricViewer extends Actor with Logging {
 
   def receive = eventSourceReceiver orElse {
     case NewMetric(metric) => grapher ! Save(metric)
-    case FileReady(filename) => reader ! ProcessFile(filename)
-    case ListOf(WorkstationData) => {
-      logger.debug("MetricsViewer: list of workstations")
-      (grapher ? LoadWorkstations).pipeTo(sender)
-      logger.debug("MetricsViewer: list of workstations done")
-    }
-    case ListOf(ErrorData) => grapher ! LoadErrors
-    case ListOf(MethodData) => grapher ! LoadMethods
-    case ListOf(ServiceData) => grapher ! LoadServices
+    case UploadingFile(filename) => reader ! ProcessFile(filename)
+    case ListOf(WorkstationData) => (grapher ? LoadWorkstations).pipeTo(sender)
+    case ListOf(ErrorData) => (grapher ? LoadErrors).pipeTo(sender)
+    case ListOf(MethodData) => (grapher ? LoadMethods).pipeTo(sender)
+    case ListOf(ServiceData) => (grapher ? LoadServices).pipeTo(sender)
 
   }
 

@@ -2,10 +2,10 @@ package it.posteitaliane.omp.UI
 
 import scala.concurrent.ExecutionContext.Implicits.global
 import akka.actor.{ActorRef, Props, Actor}
-import it.posteitaliane.omp.UI.UIActor.{Get, FileReady, NewSession}
+import it.posteitaliane.omp.UI.UIActor.{Get, UploadingFile, NewSession}
 import it.posteitaliane.omp.bl.{ProductionEventSource, EventSource}
 import com.typesafe.scalalogging.slf4j.Logging
-import it.posteitaliane.omp.data.Data
+import it.posteitaliane.omp.data.{DTO, Data}
 import it.posteitaliane.omp.bl.MetricViewer.ListOf
 import it.posteitaliane.omp.Metrics
 import it.posteitaliane.omp.Metrics.GiveMeBE
@@ -13,6 +13,8 @@ import it.posteitaliane.omp.Metrics.GiveMeBE
 import akka.pattern.{ask, pipe}
 import scala.concurrent.Await
 import scala.concurrent.duration._
+import it.posteitaliane.omp.bl.ProductionEventSource.RegisterListener
+import it.posteitaliane.omp.bl.MetricGrapher.DataUpdated
 
 class UIActor extends Actor with Logging {
   this: EventSource =>
@@ -21,9 +23,10 @@ class UIActor extends Actor with Logging {
 
   def receive = eventSourceReceiver orElse {
     case NewSession(app) => sender ! context.actorOf(SessionActor.props(self, app), SessionActor.sessionName(app))
-    case FileReady(filename) => sendEvent(FileReady(filename))
+    case UploadingFile(filename) => sendEvent(UploadingFile(filename))
     case Get(data) =>
       (be ? ListOf(data)).pipeTo(sender)
+    case du:DataUpdated[DTO @unchecked] => sendEvent(du)
   }
 
   override def preStart() {
@@ -31,6 +34,7 @@ class UIActor extends Actor with Logging {
     logger.debug(s"self: ${self.toString()}")
     logger.debug(s"uiActor: ${Application.uiActor.toString()}")
     logger.debug("PreStart UIActor completo")
+    be ! RegisterListener(self)
   }
 }
 
@@ -39,7 +43,7 @@ object UIActor {
 
   case class NewSession(application: Application)
 
-  case class FileReady(filename: String)
+  case class UploadingFile(filename: String)
 
   case class Get(data: Data)
 

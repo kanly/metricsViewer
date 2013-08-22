@@ -8,18 +8,19 @@ import it.posteitaliane.omp.bl.MetricGrapher.Save
 import it.posteitaliane.omp.data.Metric
 
 class MetricGrapher extends Actor with Logging with MetricQueries {
-
-  def receive = {
+  this: EventSource =>
+  def receive = eventSourceReceiver orElse {
     case Save(metric) => save(metric)
     case LoadWorkstations => sender ! loadWorkstations
     case LoadMethods => sender ! loadMethods
     case LoadServices => sender ! loadServices
     case LoadErrors => sender ! loadErrors
+    case du: DataUpdated[DTO @unchecked] => sendEvent(du)
   }
 }
 
 object MetricGrapher {
-  def props = Props(new MetricGrapher)
+  def props = Props(new MetricGrapher with ProductionEventSource)
 
   case class Save(metric: Metric)
 
@@ -30,5 +31,7 @@ object MetricGrapher {
   case object LoadServices
 
   case object LoadErrors
+
+  case class DataUpdated[T <: DTO](dataType: Data, data: List[T])
 
 }

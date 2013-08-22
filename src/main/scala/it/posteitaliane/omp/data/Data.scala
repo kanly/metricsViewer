@@ -25,7 +25,7 @@ case class Method(methodName: String) extends DTO
 
 case class Service(serviceName: String) extends DTO
 
-case class Error(code: String) extends DTO
+case class OmpError(code: String) extends DTO
 
 sealed trait Data
 

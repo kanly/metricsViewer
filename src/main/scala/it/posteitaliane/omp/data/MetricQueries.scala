@@ -15,7 +15,7 @@ trait MetricQueries extends GraphDB with Logging {
   def loadServices: List[Service] =
     loadElements("START ser=node:service('*:*') RETURN ser", Mapper.serviceMapper("ser"))
 
-  def loadErrors: List[Error] =
+  def loadErrors: List[OmpError] =
     loadElements("START err=node:error('*:*') RETURN err", Mapper.errorMapper("err"))
 
   def loadElements[T](query: String, mapper: MapFunc[T]): List[T] = executeQuery(query).map(mapper)
@@ -72,8 +72,8 @@ object Mapper {
   def serviceMapper(key: String): MapFunc[Service] =
     Mapper.genericMapper(node => Service(getStringProperty(node, Keys.serviceName)))(key)
 
-  def errorMapper(key: String): MapFunc[Error] =
-    Mapper.genericMapper(node => Error(getStringProperty(node, Keys.errorCode)))(key)
+  def errorMapper(key: String): MapFunc[OmpError] =
+    Mapper.genericMapper(node => OmpError(getStringProperty(node, Keys.errorCode)))(key)
 
   def genericMapper[A](mapper: Node => A)(key: String)(record: Map[String, AnyRef]): A = {
     record match {
