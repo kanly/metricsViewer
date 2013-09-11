@@ -15,6 +15,8 @@ import it.posteitaliane.omp.data.Workstation
 import it.posteitaliane.omp.bl.ProductionEventSource.{UnregisterListener, RegisterListener}
 import it.posteitaliane.omp.data
 
+import it.posteitaliane.omp.UI.core.Listeners._
+
 class MetricsView extends VerticalLayout with BaseView {
   logger.debug("Instantiating MetricsView")
   actor ! MetricsActor.RegisterView(this)
@@ -30,44 +32,36 @@ class MetricsView extends VerticalLayout with BaseView {
   workstationsSelect.setRows(10)
   workstationsSelect.setNullSelectionAllowed(true)
   workstationsSelect.setImmediate(true)
-  workstationsSelect.addValueChangeListener(new ValueChangeListener {
-    def valueChange(event: ValueChangeEvent) {
-      logger.debug(s"Value changed to ${event.getProperty.getValue}")
-      new Notification(s"Value changed to ${event.getProperty.getValue}", Notification.Type.TRAY_NOTIFICATION).show(Page.getCurrent)
-    }
+  workstationsSelect.addValueChangeListener((event: ValueChangeEvent) => {
+    logger.debug(s"Value changed to ${event.getProperty.getValue}")
+    new Notification(s"Value changed to ${event.getProperty.getValue}", Notification.Type.TRAY_NOTIFICATION).show(Page.getCurrent)
   })
 
   val methodsSelect = new ListSelect("methods")
   methodsSelect.setRows(10)
   methodsSelect.setNullSelectionAllowed(true)
   methodsSelect.setImmediate(true)
-  methodsSelect.addValueChangeListener(new ValueChangeListener {
-    def valueChange(event: ValueChangeEvent) {
-      logger.debug(s"Value changed to ${event.getProperty.getValue}")
-      new Notification(s"Value changed to ${event.getProperty.getValue}", Notification.Type.TRAY_NOTIFICATION).show(Page.getCurrent)
-    }
+  methodsSelect.addValueChangeListener((event: ValueChangeEvent) => {
+    logger.debug(s"Value changed to ${event.getProperty.getValue}")
+    new Notification(s"Value changed to ${event.getProperty.getValue}", Notification.Type.TRAY_NOTIFICATION).show(Page.getCurrent)
   })
 
   val servicesSelect = new ListSelect("services")
   servicesSelect.setRows(10)
   servicesSelect.setNullSelectionAllowed(true)
   servicesSelect.setImmediate(true)
-  servicesSelect.addValueChangeListener(new ValueChangeListener {
-    def valueChange(event: ValueChangeEvent) {
+  servicesSelect.addValueChangeListener((event: ValueChangeEvent) => {
       logger.debug(s"Value changed to ${event.getProperty.getValue}")
       new Notification(s"Value changed to ${event.getProperty.getValue}", Notification.Type.TRAY_NOTIFICATION).show(Page.getCurrent)
-    }
   })
 
   val errorsSelect = new ListSelect("errors")
   errorsSelect.setRows(10)
   errorsSelect.setNullSelectionAllowed(true)
   errorsSelect.setImmediate(true)
-  errorsSelect.addValueChangeListener(new ValueChangeListener {
-    def valueChange(event: ValueChangeEvent) {
+  errorsSelect.addValueChangeListener((event: ValueChangeEvent) => {
       logger.debug(s"Value changed to ${event.getProperty.getValue}")
       new Notification(s"Value changed to ${event.getProperty.getValue}", Notification.Type.TRAY_NOTIFICATION).show(Page.getCurrent)
-    }
   })
   addComponent(new HorizontalLayout(workstationsSelect, methodsSelect, servicesSelect, errorsSelect))
 
@@ -104,7 +98,7 @@ class MetricsView extends VerticalLayout with BaseView {
   def updateServices(app: Application, services: List[Service]) {
     app.access(new Runnable {
       def run() {
-        logger.debug("Updating errors")
+        logger.debug("Updating services")
         servicesSelect.removeAllItems()
         services.foreach(ser => {
           servicesSelect.addItem(ser)
@@ -117,7 +111,7 @@ class MetricsView extends VerticalLayout with BaseView {
   def updateMethods(app: Application, methods: List[Method]) {
     app.access(new Runnable {
       def run() {
-        logger.debug("Updating errors")
+        logger.debug("Updating methods")
         methodsSelect.removeAllItems()
         methods.foreach(me => {
           methodsSelect.addItem(me)
