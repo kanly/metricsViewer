@@ -1,4 +1,4 @@
-package it.posteitaliane.omp.UI.core
+package it.posteitaliane.omp.UI.helper
 
 import com.vaadin.data.Property.{ValueChangeEvent, ValueChangeListener}
 

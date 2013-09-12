@@ -15,7 +15,7 @@ import it.posteitaliane.omp.data.Workstation
 import it.posteitaliane.omp.bl.ProductionEventSource.{UnregisterListener, RegisterListener}
 import it.posteitaliane.omp.data
 
-import it.posteitaliane.omp.UI.core.Listeners._
+import it.posteitaliane.omp.UI.helper.Listeners._
 
 class MetricsView extends VerticalLayout with BaseView {
   logger.debug("Instantiating MetricsView")
