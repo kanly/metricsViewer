@@ -19,13 +19,15 @@ trait DTO
 
 case class Workstation(frazionario: String, pdl: String) extends DTO
 
-case class Request(request: String) extends DTO
+case class Request(request: String, startTime:Long, endTime:Long, layer:String, success:String) extends DTO
 
 case class Method(methodName: String) extends DTO
 
 case class Service(serviceName: String) extends DTO
 
 case class OmpError(code: String) extends DTO
+
+case class RequestView(ws: Workstation, method: Method, service: Service, error: OmpError, request: Request)
 
 sealed trait Data
 
@@ -44,4 +46,9 @@ object Keys {
   val workstationPdl = "pdl"
   val errorCode = "code"
   val thrownByMessage = "message"
+  val request="request"
+  val requestStart="startTime"
+  val requestEnd="endTime"
+  val requestSuccess="success"
+  val requestLayer="layer"
 }

@@ -18,7 +18,51 @@ trait MetricQueries extends GraphDB with Logging {
   def loadErrors: List[OmpError] =
     loadElements("START err=node:error('*:*') RETURN err", Mapper.errorMapper("err"))
 
-  def loadElements[T](query: String, mapper: MapFunc[T]): List[T] = executeQuery(query).map(mapper)
+  def loadRequests(workstations: Iterable[Workstation] = Nil,
+                   methods: Iterable[Method] = Nil,
+                   services: Iterable[Service] = Nil,
+                   errors: Iterable[OmpError] = Nil
+                    ): List[RequestView] = {
+
+    val clause: StringBuilder = new StringBuilder()
+
+    clause.append(if (workstations.nonEmpty) {
+      workstations.map(ws => s"(wor.${Keys.workstationFrazionario}=${ws.frazionario} AND wor.${Keys.workstationPdl}=${ws.pdl})").mkString("(", " OR ", ")")
+    })
+
+    if (methods.nonEmpty) {
+      clause.append(
+        if (clause.nonEmpty) " AND "
+        else ""
+          + methods.map(met => s"met.${Keys.methodName}=${met.methodName}").mkString("(", " OR ", ")")
+      )
+    }
+
+    if (services.nonEmpty) {
+      clause.append(
+        if (clause.nonEmpty) " AND "
+        else ""
+          + services.map(ser => s"ser.${Keys.serviceName}=${ser.serviceName}").mkString("(", " OR ", ")")
+      )
+    }
+
+    if (errors.nonEmpty) {
+      clause.append(
+        if (clause.nonEmpty) " AND "
+        else ""
+          + errors.map(err => s"err.${Keys.errorCode}=${err.code}").mkString("(", " OR ", ")")
+      )
+    }
+
+    val query = s"START wor=node:workstation('*:*') MATCH wor-[exe:Execute]->req<-[by:ExecutedBy]-met<-[own:Own]-ser, wor-[exe:Execute]->req<-[thr:ThrownBy]-err ${if (clause.nonEmpty) s"WHERE $clause" else ""} RETURN wor,req,met,ser,err"
+
+
+    logger.debug(s"requests query: $query")
+
+    loadElements(query, Mapper.requestViewMapper("wor", "req", "met", "ser", "err"))
+  }
+
+  def loadElements[T](query: String, mapper: MapFunc[T]): List[T] = executeQuery(query).map(mapper).filter(_.isDefined).map(_.get)
 
   def save(metric: Metric) {
     beginTx()
@@ -51,17 +95,18 @@ trait MetricQueries extends GraphDB with Logging {
   }
 
   def createRequestNode(metric: Metric) = createNode(Map(
-    "request" -> metric.request,
-    "startTime" -> Long.box(metric.startTime),
-    "endTime" -> Long.box(metric.endTime),
-    "success" -> (if (metric.success) "OK" else "KO"),
-    "layer" -> metric.layer
+    Keys.request -> metric.request,
+    Keys.requestStart -> Long.box(metric.startTime),
+    Keys.requestEnd -> Long.box(metric.endTime),
+    Keys.requestSuccess -> (if (metric.success) "OK" else "KO"),
+    Keys.requestLayer -> metric.layer
   ))
 
 }
 
 object Mapper {
-  type MapFunc[T] = Map[String, AnyRef] => T
+
+  type MapFunc[T] = Map[String, AnyRef] => Option[T]
 
   def workstationMapper(key: String): MapFunc[Workstation] =
     Mapper.genericMapper((node: Node) => Workstation(getStringProperty(node, Keys.workstationFrazionario), getStringProperty(node, Keys.workstationPdl)))(key)
@@ -75,17 +120,39 @@ object Mapper {
   def errorMapper(key: String): MapFunc[OmpError] =
     Mapper.genericMapper(node => OmpError(getStringProperty(node, Keys.errorCode)))(key)
 
-  def genericMapper[A](mapper: Node => A)(key: String)(record: Map[String, AnyRef]): A = {
+  def requestMapper(key: String): MapFunc[Request] =
+    genericMapper(node => Request(
+      getStringProperty(node, Keys.request),
+      getLongProperty(node, Keys.requestStart),
+      getLongProperty(node, Keys.requestEnd),
+      getStringProperty(node, Keys.requestLayer),
+      getStringProperty(node, Keys.requestSuccess))
+    )(key)
+
+  def requestViewMapper(workstationKey: String, requestKey: String, methodKey: String, serviceKey: String, errorKey: String): MapFunc[RequestView] =
+    (record: Map[String, AnyRef]) => Some(RequestView(
+      workstationMapper(workstationKey)(record).orNull,
+      methodMapper(methodKey)(record).orNull,
+      serviceMapper(serviceKey)(record).orNull,
+      errorMapper(errorKey)(record).orNull,
+      requestMapper(requestKey)(record).orNull
+    ))
+
+  def genericMapper[A](mapper: Node => A)(key: String)(record: Map[String, AnyRef]): Option[A] = {
     record match {
-      case (record: Map[String, AnyRef]) => record(key) match {
-        case workstationNode: Node => mapper(workstationNode)
-        case _ => throw new UnsupportedOperationException("Unexpected type in query result")
+      case (record: Map[String, AnyRef]) => record.get(key) match {
+        case Some(node: Node) => Some(mapper(node))
+        case Some(_) => throw new UnsupportedOperationException("Unexpected type in query result")
+        case None => None
       }
     }
   }
 
-  def getStringProperty(workstationNode: Node, frazionario: String): String = {
-    workstationNode.getProperty(frazionario).asInstanceOf[String]
+  def getStringProperty(workstationNode: Node, prop: String): String = {
+    workstationNode.getProperty(prop).asInstanceOf[String]
   }
+
+  def getLongProperty(workstationNode: Node, prop: String): Long =
+    workstationNode.getProperty(prop).asInstanceOf[java.lang.Long]
 
 }
