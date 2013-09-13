@@ -5,6 +5,7 @@
 /*.iml
 /*.ipr
 /*.iws
+*.sc
 
 # Maven
 /target/
