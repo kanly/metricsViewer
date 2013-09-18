@@ -22,7 +22,7 @@ class Metrics extends Actor {
 }
 
 object Metrics {
-  val sys = ActorSystem("metricsView")
+  val sys = ActorSystem("omp")
   val director = sys.actorOf(Props(new Metrics))
 
   case object GiveMeUI
