@@ -9,7 +9,7 @@ import it.posteitaliane.omp.UI.{SessionActor, Application}
 import com.typesafe.scalalogging.slf4j.Logging
 import it.posteitaliane.omp.data._
 import it.posteitaliane.omp.UI.view.MetricsActor.{NeedData, FileUploaded, RegisterView}
-import com.vaadin.data.Property.{ValueChangeEvent, ValueChangeListener}
+import com.vaadin.data.Property.ValueChangeEvent
 import it.posteitaliane.omp.UI.SessionActor.{ViewChanged, Load, Updated}
 import it.posteitaliane.omp.data.Workstation
 import it.posteitaliane.omp.bl.ProductionEventSource.{UnregisterListener, RegisterListener}
@@ -51,8 +51,8 @@ class MetricsView extends VerticalLayout with BaseView {
   servicesSelect.setNullSelectionAllowed(true)
   servicesSelect.setImmediate(true)
   servicesSelect.addValueChangeListener((event: ValueChangeEvent) => {
-      logger.debug(s"Value changed to ${event.getProperty.getValue}")
-      new Notification(s"Value changed to ${event.getProperty.getValue}", Notification.Type.TRAY_NOTIFICATION).show(Page.getCurrent)
+    logger.debug(s"Value changed to ${event.getProperty.getValue}")
+    new Notification(s"Value changed to ${event.getProperty.getValue}", Notification.Type.TRAY_NOTIFICATION).show(Page.getCurrent)
   })
 
   val errorsSelect = new ListSelect("errors")
@@ -60,8 +60,8 @@ class MetricsView extends VerticalLayout with BaseView {
   errorsSelect.setNullSelectionAllowed(true)
   errorsSelect.setImmediate(true)
   errorsSelect.addValueChangeListener((event: ValueChangeEvent) => {
-      logger.debug(s"Value changed to ${event.getProperty.getValue}")
-      new Notification(s"Value changed to ${event.getProperty.getValue}", Notification.Type.TRAY_NOTIFICATION).show(Page.getCurrent)
+    logger.debug(s"Value changed to ${event.getProperty.getValue}")
+    new Notification(s"Value changed to ${event.getProperty.getValue}", Notification.Type.TRAY_NOTIFICATION).show(Page.getCurrent)
   })
   addComponent(new HorizontalLayout(workstationsSelect, methodsSelect, servicesSelect, errorsSelect))
 
