@@ -24,42 +24,44 @@ trait MetricQueries extends GraphDB with Logging {
                    errors: Iterable[OmpError] = Nil
                     ): List[RequestView] = {
 
+    logger.debug(s"workstations: ${workstations.mkString(";")} \nmethods: ${methods.mkString(";")}\nservices: ${services.mkString(";")}\nerrors: ${errors.mkString(";")}")
+
     val clause: StringBuilder = new StringBuilder()
 
     clause.append(if (workstations.nonEmpty) {
-      workstations.map(ws => s"(wor.${Keys.workstationFrazionario}=${ws.frazionario} AND wor.${Keys.workstationPdl}=${ws.pdl})").mkString("(", " OR ", ")")
+      workstations.map(ws => s"(wor.${Keys.workstationFrazionario}=${"\"" + ws.frazionario + "\""} AND wor.${Keys.workstationPdl}=${"\"" + ws.pdl + "\""})").mkString("(", " OR ", ")")
     })
 
     if (methods.nonEmpty) {
+      if (clause.nonEmpty) clause.append(" AND ")
       clause.append(
-        if (clause.nonEmpty) " AND "
-        else ""
-          + methods.map(met => s"met.${Keys.methodName}=${met.methodName}").mkString("(", " OR ", ")")
+        methods.map(met => s"met.${Keys.methodName}=${"\"" + met.methodName + "\""}").mkString("(", " OR ", ")")
       )
     }
 
     if (services.nonEmpty) {
+      if (clause.nonEmpty) clause.append(" AND ")
       clause.append(
-        if (clause.nonEmpty) " AND "
-        else ""
-          + services.map(ser => s"ser.${Keys.serviceName}=${ser.serviceName}").mkString("(", " OR ", ")")
+        services.map(ser => s"ser.${Keys.serviceName}=${"\"" + ser.serviceName + "\""}").mkString("(", " OR ", ")")
       )
     }
 
     if (errors.nonEmpty) {
+      if (clause.nonEmpty) clause.append(" AND ")
       clause.append(
-        if (clause.nonEmpty) " AND "
-        else ""
-          + errors.map(err => s"err.${Keys.errorCode}=${err.code}").mkString("(", " OR ", ")")
+        errors.map(err => s"err.${Keys.errorCode}=${"\"" + err.code + "\""}").mkString("(", " OR ", ")")
       )
     }
 
-    val query = s"START wor=node:workstation('*:*') MATCH wor-[exe:Execute]->req<-[by:ExecutedBy]-met<-[own:Own]-ser, wor-[exe:Execute]->req<-[thr:ThrownBy]-err ${if (clause.nonEmpty) s"WHERE $clause" else ""} RETURN wor,req,met,ser,err"
+    val query = s"START wor=node:workstation('*:*') MATCH wor-[exe:Execute]->req<-[execBy:ExecutedBy]-met<-[own:Own]-ser, wor-[execute:Execute]->req<-[thr?:ThrownBy]-err ${if (clause.nonEmpty) s"WHERE $clause" else ""} RETURN wor,req,met,ser,err"
 
 
     logger.debug(s"requests query: $query")
 
-    loadElements(query, Mapper.requestViewMapper("wor", "req", "met", "ser", "err"))
+    val elements: List[RequestView] = loadElements(query, Mapper.requestViewMapper("wor", "req", "met", "ser", "err"))
+    logger.debug(s"found ${elements.size} requests")
+    logger.trace(elements.mkString("; "))
+    elements
   }
 
   def loadElements[T](query: String, mapper: MapFunc[T]): List[T] = executeQuery(query).map(mapper).filter(_.isDefined).map(_.get)
@@ -142,7 +144,8 @@ object Mapper {
     record match {
       case (record: Map[String, AnyRef]) => record.get(key) match {
         case Some(node: Node) => Some(mapper(node))
-        case Some(_) => throw new UnsupportedOperationException("Unexpected type in query result")
+        case Some(null) => None
+        case Some(a) => throw new UnsupportedOperationException(s"Unexpected type in query result $a")
         case None => None
       }
     }
