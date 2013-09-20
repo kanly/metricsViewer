@@ -28,9 +28,10 @@ trait MetricQueries extends GraphDB with Logging {
 
     val clause: StringBuilder = new StringBuilder()
 
-    clause.append(if (workstations.nonEmpty) {
-      workstations.map(ws => s"(wor.${Keys.workstationFrazionario}=${"\"" + ws.frazionario + "\""} AND wor.${Keys.workstationPdl}=${"\"" + ws.pdl + "\""})").mkString("(", " OR ", ")")
-    })
+    if (workstations.nonEmpty) {
+      clause.append(
+        workstations.map(ws => s"(wor.${Keys.workstationFrazionario}=${"\"" + ws.frazionario + "\""} AND wor.${Keys.workstationPdl}=${"\"" + ws.pdl + "\""})").mkString("(", " OR ", ")"))
+    }
 
     if (methods.nonEmpty) {
       if (clause.nonEmpty) clause.append(" AND ")
