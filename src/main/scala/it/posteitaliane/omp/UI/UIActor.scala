@@ -6,7 +6,7 @@ import it.posteitaliane.omp.UI.UIActor.{Get, UploadingFile, NewSession}
 import it.posteitaliane.omp.bl.{ProductionEventSource, EventSource}
 import com.typesafe.scalalogging.slf4j.Logging
 import it.posteitaliane.omp.data.{DTO, Data}
-import it.posteitaliane.omp.bl.MetricViewer.ListOf
+import it.posteitaliane.omp.bl.MetricViewer.{ListOfRequestViews, ListOf}
 import it.posteitaliane.omp.Metrics
 import it.posteitaliane.omp.Metrics.GiveMeBE
 
@@ -15,6 +15,7 @@ import scala.concurrent.Await
 import scala.concurrent.duration._
 import it.posteitaliane.omp.bl.ProductionEventSource.RegisterListener
 import it.posteitaliane.omp.bl.MetricGrapher.DataUpdated
+import it.posteitaliane.omp.UI.SessionActor.LoadRequestViews
 
 class UIActor extends Actor with Logging {
   this: EventSource =>
@@ -26,7 +27,9 @@ class UIActor extends Actor with Logging {
     case UploadingFile(filename) => sendEvent(UploadingFile(filename))
     case Get(data) =>
       (be ? ListOf(data)).pipeTo(sender)
-    case du:DataUpdated[DTO @unchecked] => sendEvent(du)
+    case du: DataUpdated[DTO@unchecked] => sendEvent(du)
+    case LoadRequestViews(ws, met, ser, err) =>
+      (be ? ListOfRequestViews(ws, met, ser, err)).pipeTo(sender)
   }
 
   override def preStart() {
