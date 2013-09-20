@@ -23,7 +23,7 @@ class UIActor extends Actor with Logging {
   lazy val be = Await.result((Metrics.director ? GiveMeBE).mapTo[ActorRef], 2.second)
 
   def receive = eventSourceReceiver orElse {
-    case NewSession(app) => sender ! context.actorOf(SessionActor.props(self, app), SessionActor.sessionName(app))
+    case NewSession(app) => sender ! context.actorOf(SessionActor.props(self, app))
     case UploadingFile(filename) => sendEvent(UploadingFile(filename))
     case Get(data) =>
       (be ? ListOf(data)).pipeTo(sender)

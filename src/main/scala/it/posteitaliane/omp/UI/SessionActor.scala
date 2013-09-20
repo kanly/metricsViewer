@@ -65,8 +65,6 @@ class SessionActor(ui: ActorRef, currApplication: Application) extends Actor wit
 object SessionActor {
   def props(ui: ActorRef, currApplication: Application) = Props(new SessionActor(ui, currApplication) with ProductionEventSource)
 
-  def sessionName(app: Application) = s"session_${app.getUIId}"
-
   case object Close
 
   case class ViewChange(nextView: View)
