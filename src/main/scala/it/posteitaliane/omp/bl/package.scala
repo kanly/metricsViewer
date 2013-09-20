@@ -4,5 +4,5 @@ import scala.concurrent.duration._
 import akka.util.Timeout
 
 package object bl {
-  implicit val askTimeout = Timeout(2.seconds)
+  implicit val askTimeout = Timeout(5.seconds)
 }
