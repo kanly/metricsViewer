@@ -6,7 +6,7 @@ import akka.pattern.ask
 import com.vaadin.ui._
 import com.vaadin.navigator.ViewChangeListener.ViewChangeEvent
 import java.io.{IOException, FileOutputStream, OutputStream}
-import com.vaadin.server.Page
+import com.vaadin.server.{Sizeable, Page}
 import akka.actor.{Props, Actor}
 import it.posteitaliane.omp.UI.{SessionActor, Application}
 import com.typesafe.scalalogging.slf4j.Logging
@@ -24,6 +24,8 @@ import com.vaadin.data.util.IndexedContainer
 import java.text.SimpleDateFormat
 import java.util.Date
 import scala.util.{Failure, Success}
+import com.vaadin.event.ItemClickEvent
+import com.vaadin.data.Property
 
 class MetricsView extends VerticalLayout with BaseView {
   logger.debug("Instantiating MetricsView")
@@ -162,6 +164,12 @@ class MetricsView extends VerticalLayout with BaseView {
       def run() {
         logger.debug("Creating metricsTable")
         val newTable = new Table("Requests", MetricsContainer(requests))
+        newTable.setEnabled(true)
+        newTable.addItemClickListener((event: ItemClickEvent) => {
+          val property: Property[RequestView] = event.getItem.getItemProperty(MetricsContainer.fullBeanKey)
+          val window = new DetailWindow(property.getValue)
+          UI.getCurrent.addWindow(window)
+        })
         newTable.setVisibleColumns(wsKey, methodKey, serviceKey, errorKey, stKey, etKey, layerKey, successKey)
         replaceComponent(metricTable, newTable)
         metricTable = newTable
@@ -169,7 +177,6 @@ class MetricsView extends VerticalLayout with BaseView {
       }
     })
   }
-
 
 }
 
@@ -320,4 +327,40 @@ object MetricsContainer {
   val keys = List(wsKey, methodKey, serviceKey, errorKey, stKey, etKey, layerKey, successKey)
 
   def apply(items: List[RequestView]) = new MetricsContainer(items)
+}
+
+class DetailWindow(item: RequestView) extends Window {
+  val layout = new FormLayout()
+  val dateFormatter = new SimpleDateFormat("HH:mm:ss.SSS dd-MM-yyyy")
+  setContent(layout)
+  setWidth(500, Sizeable.Unit.PIXELS)
+  setHeight(500, Sizeable.Unit.PIXELS)
+
+  addTextField("Frazionario", item.ws.frazionario)
+  addTextField("PDL", item.ws.pdl)
+  addTextField("Service", item.service.serviceName)
+  addTextField("Method", item.method.methodName)
+  addTextField("Layer", item.request.layer)
+  addTextField("Start", dateFormatter.format(new Date(item.request.startTime)))
+  addTextField("End", dateFormatter.format(new Date(item.request.endTime)))
+  addTextField("Success", item.request.success)
+  if (item.error != null)
+    addTextField("Error", item.error.code)
+
+  private val reqField = new TextArea("Request")
+  reqField.setValue(item.request.request)
+  //reqField.setEnabled(false)
+  reqField.setSizeFull()
+  reqField.setRows(10)
+  layout.addComponent(reqField)
+
+
+  def addTextField(caption: String, value: String) {
+    val field = new TextField(caption)
+    field.setValue(value)
+    //field.setEnabled(false)
+    layout.addComponent(field)
+  }
+
+
 }
