@@ -39,6 +39,8 @@ case object ServiceData extends Data
 
 case object ErrorData extends Data
 
+case object RequestData extends Data
+
 object Keys {
   val serviceName = "name"
   val methodName = "name"
