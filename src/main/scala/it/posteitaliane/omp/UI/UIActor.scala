@@ -28,8 +28,8 @@ class UIActor extends Actor with Logging {
     case Get(data) =>
       (be ? ListOf(data)).pipeTo(sender)
     case du: DataUpdated[DTO@unchecked] => sendEvent(du)
-    case LoadRequestViews(ws, met, ser, err) =>
-      (be ? ListOfRequestViews(ws, met, ser, err)).pipeTo(sender)
+    case LoadRequestViews(ws, met, err) =>
+      (be ? ListOfRequestViews(ws, met, err)).pipeTo(sender)
   }
 
   override def preStart() {

@@ -13,15 +13,12 @@ import it.posteitaliane.omp.UI.SessionActor.ViewChanged
 import it.posteitaliane.omp.UI.SessionActor.Load
 import scala.util.Failure
 import it.posteitaliane.omp.UI.UIActor.Get
-import it.posteitaliane.omp.data.Workstation
 import it.posteitaliane.omp.UI.SessionActor.GiveMeMyActor
 import it.posteitaliane.omp.bl.ProductionEventSource.RegisterListener
 import it.posteitaliane.omp.bl.MetricGrapher.DataUpdated
 import scala.util.Success
-import it.posteitaliane.omp.data.Method
 import it.posteitaliane.omp.UI.SessionActor.ViewChange
 import it.posteitaliane.omp.UI.SessionActor.Updated
-import it.posteitaliane.omp.data.Service
 import it.posteitaliane.omp.UI.SessionActor.FileReady
 
 class SessionActor(ui: ActorRef, currApplication: Application) extends Actor with Logging {
@@ -54,7 +51,7 @@ class SessionActor(ui: ActorRef, currApplication: Application) extends Actor wit
     }
     case UploadingFile(_) => currApplication.notify("A new history file is being uploaded and processed")
     case DataUpdated(dataType, data) => sendEvent(Updated(dataType, data))
-    case LoadRequestViews(ws, met, ser, err) => (ui ? LoadRequestViews(ws, met, ser, err)).pipeTo(sender)
+    case LoadRequestViews(ws, met, err) => (ui ? LoadRequestViews(ws, met, err)).pipeTo(sender)
   }
 
   override def preStart() {
@@ -80,8 +77,7 @@ object SessionActor {
   case class ViewChanged(oldView: View, nextView: View)
 
   case class LoadRequestViews(ws: Iterable[WorkstationView] = Nil,
-                              met: Iterable[Method] = Nil,
-                              ser: Iterable[Service] = Nil,
+                              met: Iterable[MethodView] = Nil,
                               err: Iterable[OmpError] = Nil)
 
 }

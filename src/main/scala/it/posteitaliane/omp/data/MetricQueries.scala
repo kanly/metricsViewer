@@ -15,30 +15,39 @@ trait MetricQueries extends GraphDB with Logging {
     }.toList.sortBy(wsv => wsv.frazionario)
 
 
-  def loadMethods: List[Method] =
-    loadElements("START met=node:method('*:*') RETURN met", Mapper.methodMapper("met"))
-
-  def loadServices: List[Service] =
-    loadElements("START ser=node:service('*:*') RETURN ser", Mapper.serviceMapper("ser"))
+  def loadMethods: List[MethodView] =
+    loadElements("START ser=node:service('*:*') MATCH ser-[own:Own]->met RETURN ser,met", Mapper.serviceMethodMapper("ser", "met"))
+      .map {
+      case (service, method) => (service.serviceName, method.methodName)
+    }.groupBy {
+      case (service, _) => service
+    }.map {
+      case (service, methods) => MethodView(service, methods.map {
+        case (_, method) => method
+      }.sorted)
+    }.toList
 
   def loadErrors: List[OmpError] =
     loadElements("START err=node:error('*:*') RETURN err", Mapper.errorMapper("err"))
 
   def loadRequests(workstations: Iterable[WorkstationView] = Nil,
-                   methods: Iterable[Method] = Nil,
-                   services: Iterable[Service] = Nil,
+                   methods: Iterable[MethodView] = Nil,
                    errors: Iterable[OmpError] = Nil
                     ): List[RequestView] = {
 
     def buildPdl(pdls: List[String]): String = {
       if (pdls.nonEmpty) {
         pdls.map(pdl => s"wor.${Keys.workstationPdl}=${"\"" + pdl + "\""}").mkString("AND (", " OR ", ")")
-      } else {
-        ""
-      }
+      } else ""
     }
 
-    logger.debug(s"workstations: ${workstations.mkString(";")} \nmethods: ${methods.mkString(";")}\nservices: ${services.mkString(";")}\nerrors: ${errors.mkString(";")}")
+    def buildMethods(methods: List[String]): String = {
+      if (methods.nonEmpty)
+        methods.map(met => s"met.${Keys.methodName}=${"\"" + met + "\""}").mkString("AND (", " OR ", ")")
+      else ""
+    }
+
+    logger.debug(s"workstations: ${workstations.mkString(";")} \nmethods: ${methods.mkString(";")}\nerrors: ${errors.mkString(";")}")
 
     val clause: StringBuilder = new StringBuilder()
 
@@ -54,14 +63,7 @@ trait MetricQueries extends GraphDB with Logging {
     if (methods.nonEmpty) {
       if (clause.nonEmpty) clause.append(" AND ")
       clause.append(
-        methods.map(met => s"met.${Keys.methodName}=${"\"" + met.methodName + "\""}").mkString("(", " OR ", ")")
-      )
-    }
-
-    if (services.nonEmpty) {
-      if (clause.nonEmpty) clause.append(" AND ")
-      clause.append(
-        services.map(ser => s"ser.${Keys.serviceName}=${"\"" + ser.serviceName + "\""}").mkString("(", " OR ", ")")
+        methods.map(meth => s"ser.${Keys.serviceName}=${"\"" + meth.service + "\""} ${buildMethods(meth.methods)}").mkString("(", " OR ", ")")
       )
     }
 
@@ -141,6 +143,13 @@ object Mapper {
 
   def serviceMapper(key: String): MapFunc[Service] =
     Mapper.genericMapper(node => Service(getStringProperty(node, Keys.serviceName)))(key)
+
+  def serviceMethodMapper(serviceKey: String, methodKey: String): MapFunc[(Service, Method)] =
+    (record: Map[String, AnyRef]) => Some(
+      serviceMapper(serviceKey)(record).orNull,
+      methodMapper(methodKey)(record).orNull
+    )
+
 
   def errorMapper(key: String): MapFunc[OmpError] =
     Mapper.genericMapper(node => OmpError(getStringProperty(node, Keys.errorCode)))(key)

@@ -49,23 +49,12 @@ class MetricsView extends VerticalLayout with BaseView {
     loadMetrics()
   })
 
-  val methodsSelect = new ListSelect("methods")
-  methodsSelect.setRows(10)
-  methodsSelect.setNullSelectionAllowed(true)
-  methodsSelect.setImmediate(true)
-  methodsSelect.setMultiSelect(true)
-  methodsSelect.addValueChangeListener((event: ValueChangeEvent) => {
-    logger.debug(s"Value changed to ${event.getProperty.getValue}")
-    new Notification(s"Value changed to ${event.getProperty.getValue}", Notification.Type.TRAY_NOTIFICATION).show(Page.getCurrent)
-    loadMetrics()
-  })
-
-  val servicesSelect = new ListSelect("services")
-  servicesSelect.setRows(10)
-  servicesSelect.setNullSelectionAllowed(true)
-  servicesSelect.setImmediate(true)
-  servicesSelect.setMultiSelect(true)
-  servicesSelect.addValueChangeListener((event: ValueChangeEvent) => {
+  val methodTree = new TreeTable()
+  methodTree.setHeight(200, Sizeable.Unit.PIXELS)
+  methodTree.setMultiSelect(true)
+  methodTree.setSelectable(true)
+  methodTree.setImmediate(true)
+  methodTree.addValueChangeListener((event: ValueChangeEvent) => {
     logger.debug(s"Value changed to ${event.getProperty.getValue}")
     new Notification(s"Value changed to ${event.getProperty.getValue}", Notification.Type.TRAY_NOTIFICATION).show(Page.getCurrent)
     loadMetrics()
@@ -81,7 +70,7 @@ class MetricsView extends VerticalLayout with BaseView {
     new Notification(s"Value changed to ${event.getProperty.getValue}", Notification.Type.TRAY_NOTIFICATION).show(Page.getCurrent)
     loadMetrics()
   })
-  addComponent(new HorizontalLayout(wsTree, methodsSelect, servicesSelect, errorsSelect))
+  addComponent(new HorizontalLayout(wsTree, methodTree, errorsSelect))
 
   def onEnter(event: ViewChangeEvent) {
     actor ! NeedData
@@ -102,9 +91,21 @@ class MetricsView extends VerticalLayout with BaseView {
     else
       Nil
 
+    val methods: Iterable[MethodView] = methodTree.getScalaValue
+
+    val metView: Iterable[MethodView] = if (methods.nonEmpty)
+      methods.groupBy {
+        case MethodView(service, method) => service
+      }.map {
+        case (serv, metViewList) =>
+          val methods = metViewList.map(_.methods).foldLeft(List[String]())((a, b) => a ++ b)
+          MethodView(serv, methods)
+      }
+    else
+      Nil
+
     actor ! LoadMetrics(ws = wssView,
-      met = methodsSelect.getScalaValue,
-      ser = servicesSelect.getScalaValue,
+      met = metView,
       err = errorsSelect.getScalaValue
     )
   }
@@ -120,13 +121,11 @@ class MetricsView extends VerticalLayout with BaseView {
           val frazWs: WorkstationView = WorkstationView(ws.frazionario, Nil)
           val frazItem = container.addItem(frazWs)
           setPropValue(frazItem.getItemProperty("Workstation"), frazWs.frazionario)
-          setPropValue(frazItem.getItemProperty("ws"), frazWs)
 
           ws.pdls.foreach(pdl => {
             val pdlWs = WorkstationView(ws.frazionario, List(pdl))
             val frazItem = container.addItem(pdlWs)
             setPropValue(frazItem.getItemProperty("Workstation"), pdl)
-            setPropValue(frazItem.getItemProperty("ws"), pdlWs)
             container.setParent(pdlWs, frazWs)
             container.setChildrenAllowed(pdlWs, false)
           })
@@ -151,27 +150,28 @@ class MetricsView extends VerticalLayout with BaseView {
     })
   }
 
-  def updateServices(app: Application, services: List[Service]) {
+  def updateMethods(app: Application, methods: List[MethodView]) {
     app.access(new Runnable {
       def run() {
-        logger.debug("Updating services")
-        servicesSelect.removeAllItems()
-        services.foreach(ser => {
-          servicesSelect.addItem(ser)
-          servicesSelect.setItemCaption(ser, s"name: ${ser.serviceName}")
-        })
-      }
-    })
-  }
+        logger.debug(s"Updating methods ${methods.mkString}")
+        val container = new HierarchicalContainer()
+        container.addContainerProperty("Method", classOf[String], "-")
 
-  def updateMethods(app: Application, methods: List[Method]) {
-    app.access(new Runnable {
-      def run() {
-        logger.debug("Updating methods")
-        methodsSelect.removeAllItems()
-        methods.foreach(me => {
-          methodsSelect.addItem(me)
-          methodsSelect.setItemCaption(me, s"name: ${me.methodName}")
+        methods.foreach(met => {
+          val serviceView = MethodView(met.service, Nil)
+          val serviceItem = container.addItem(serviceView)
+          setPropValue(serviceItem.getItemProperty("Method"), serviceView.service)
+
+          met.methods.foreach(method => {
+            val methodView = MethodView(met.service, List(method))
+            val methodItem = container.addItem(methodView)
+            setPropValue(methodItem.getItemProperty("Method"), method)
+            container.setParent(methodView, serviceView)
+            container.setChildrenAllowed(methodView, false)
+          })
+
+          methodTree.setContainerDataSource(container)
+          methodTree.setVisibleColumns("Method")
         })
       }
     })
@@ -247,11 +247,9 @@ class MetricsActor(app: Application) extends Actor with Logging {
       app.sessionActor ! Load(WorkstationData)
       app.sessionActor ! Load(ErrorData)
       app.sessionActor ! Load(MethodData)
-      app.sessionActor ! Load(ServiceData)
     }
     case Updated(WorkstationData, wStations: List[WorkstationView@unchecked]) => view.updateWorkstations(app, wStations)
-    case Updated(ServiceData, services: List[Service@unchecked]) => view.updateServices(app, services)
-    case Updated(MethodData, methods: List[Method@unchecked]) => view.updateMethods(app, methods)
+    case Updated(MethodData, methods: List[MethodView@unchecked]) => view.updateMethods(app, methods)
     case Updated(ErrorData, errors: List[OmpError@unchecked]) => view.updateErrors(app, errors)
     case Updated(dataType, data) => logger.debug(s"Unmanaged updated data type: $dataType")
     case ViewChanged(oldView, newView) => {
@@ -261,7 +259,7 @@ class MetricsActor(app: Application) extends Actor with Logging {
         app.sessionActor ! UnregisterListener(self)
       }
     }
-    case LoadMetrics(ws, met, ser, err) => (app.sessionActor ? LoadRequestViews(ws, met, ser, err)).mapTo[List[RequestView]] onComplete {
+    case LoadMetrics(ws, met, err) => (app.sessionActor ? LoadRequestViews(ws, met, err)).mapTo[List[RequestView]] onComplete {
       case Success(result) => {
         logger.debug(s"Received ${result.size} metrics")
         view.addMetricsTable(app, result)
@@ -288,8 +286,7 @@ object MetricsActor {
   case class RegisterView(view: MetricsView)
 
   case class LoadMetrics(ws: Iterable[WorkstationView] = Nil,
-                         met: Iterable[Method] = Nil,
-                         ser: Iterable[Service] = Nil,
+                         met: Iterable[MethodView] = Nil,
                          err: Iterable[OmpError] = Nil)
 
   case object NeedData
