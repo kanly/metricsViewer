@@ -63,7 +63,7 @@ trait MetricQueries extends GraphDB with Logging {
     if (methods.nonEmpty) {
       if (clause.nonEmpty) clause.append(" AND ")
       clause.append(
-        methods.map(meth => s"ser.${Keys.serviceName}=${"\"" + meth.service + "\""} ${buildMethods(meth.methods)}").mkString("(", " OR ", ")")
+        methods.map(meth => s"(ser.${Keys.serviceName}=${"\"" + meth.service + "\""} ${buildMethods(meth.methods)})").mkString("(", " OR ", ")")
       )
     }
 
