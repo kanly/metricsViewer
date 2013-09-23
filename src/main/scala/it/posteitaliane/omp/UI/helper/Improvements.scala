@@ -1,17 +1,17 @@
 package it.posteitaliane.omp.UI.helper
 
-import com.vaadin.ui.ListSelect
+import com.vaadin.ui.{AbstractSelect, ListSelect}
 import java.util
 import scala.collection.JavaConverters._
 
 
 object Improvements {
-  implicit def toBetterListSelect(select:ListSelect):BetterListSelect = new BetterListSelect(select)
-  implicit def fromBetterListSelect(better:BetterListSelect):ListSelect = better.select
+  implicit def toBetterListSelect[T <: AbstractSelect](select:T):BetterSelect[T] = new BetterSelect(select)
+  implicit def fromBetterListSelect[T <: AbstractSelect](better:BetterSelect[T]):T = better.select
 
 }
 
-class BetterListSelect(val select:ListSelect) {
+class BetterSelect[S <: AbstractSelect](val select:S) {
   def getScalaValue[T]:Iterable[T]={
     if(select.isMultiSelect)
       select.getValue.asInstanceOf[util.Collection[T]].asScala
