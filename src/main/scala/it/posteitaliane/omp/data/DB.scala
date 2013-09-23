@@ -111,6 +111,8 @@ case class MethodIndex(methodName: String) extends MWIndex("method", methodName)
 
 case class ServiceIndex(serviceName: String) extends MWIndex("service", serviceName)
 
+case class PostalOfficeIndex(frazionario: String) extends MWIndex("postalOffice", frazionario)
+
 case class WorkStationIndex(frazionarioPdl: (String, String)) extends MWIndex("workstation", frazionarioPdl)
 
 case class ErrorIndex(code: String) extends MWIndex("error", code)

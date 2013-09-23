@@ -35,7 +35,7 @@ object MetricGrapher {
 
   case class DataUpdated[T <: DTO](dataType: Data, data: List[T])
 
-  case class LoadRequests(ws: Iterable[Workstation] = Nil,
+  case class LoadRequests(ws: Iterable[WorkstationView] = Nil,
                           met: Iterable[Method] = Nil,
                           ser: Iterable[Service] = Nil,
                           err: Iterable[OmpError] = Nil)

@@ -19,6 +19,8 @@ trait DTO
 
 case class Workstation(frazionario: String, pdl: String) extends DTO
 
+case class WorkstationView(frazionario: String, pdls:List[String]) extends DTO
+
 case class Request(request: String, startTime:Long, endTime:Long, layer:String, success:String) extends DTO
 
 case class Method(methodName: String) extends DTO

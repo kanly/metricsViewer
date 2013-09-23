@@ -6,8 +6,14 @@ import Mapper.MapFunc
 
 trait MetricQueries extends GraphDB with Logging {
 
-  def loadWorkstations: List[Workstation] =
-    loadElements("START wor=node:workstation('*:*') RETURN wor", Mapper.workstationMapper("wor"))
+  def loadWorkstations: List[WorkstationView] =
+    loadElements("START poff=node:postalOffice('*:*') MATCH poff-[has:Own]->wor RETURN wor", Mapper.workstationMapper("wor"))
+      .groupBy {
+      case Workstation(fraz, pdl) => fraz
+    }.map {
+      case (fraz, wss) => WorkstationView(fraz, wss.map(ws => ws.pdl).sorted)
+    }.toList.sortBy(wsv => wsv.frazionario)
+
 
   def loadMethods: List[Method] =
     loadElements("START met=node:method('*:*') RETURN met", Mapper.methodMapper("met"))
@@ -18,11 +24,19 @@ trait MetricQueries extends GraphDB with Logging {
   def loadErrors: List[OmpError] =
     loadElements("START err=node:error('*:*') RETURN err", Mapper.errorMapper("err"))
 
-  def loadRequests(workstations: Iterable[Workstation] = Nil,
+  def loadRequests(workstations: Iterable[WorkstationView] = Nil,
                    methods: Iterable[Method] = Nil,
                    services: Iterable[Service] = Nil,
                    errors: Iterable[OmpError] = Nil
                     ): List[RequestView] = {
+
+    def buildPdl(pdls: List[String]): String = {
+      if (pdls.nonEmpty) {
+        pdls.map(pdl => s"wor.${Keys.workstationPdl}=${"\"" + pdl + "\""}").mkString("AND (", " OR ", ")")
+      } else {
+        ""
+      }
+    }
 
     logger.debug(s"workstations: ${workstations.mkString(";")} \nmethods: ${methods.mkString(";")}\nservices: ${services.mkString(";")}\nerrors: ${errors.mkString(";")}")
 
@@ -30,7 +44,11 @@ trait MetricQueries extends GraphDB with Logging {
 
     if (workstations.nonEmpty) {
       clause.append(
-        workstations.map(ws => s"(wor.${Keys.workstationFrazionario}=${"\"" + ws.frazionario + "\""} AND wor.${Keys.workstationPdl}=${"\"" + ws.pdl + "\""})").mkString("(", " OR ", ")"))
+        workstations.map(ws => {
+          s"(poff.${Keys.workstationFrazionario}=${"\"" + ws.frazionario + "\""} ${buildPdl(ws.pdls)})"
+
+        }).mkString("(", " OR ", ")")
+      )
     }
 
     if (methods.nonEmpty) {
@@ -54,7 +72,7 @@ trait MetricQueries extends GraphDB with Logging {
       )
     }
 
-    val query = s"START wor=node:workstation('*:*') MATCH wor-[exe:Execute]->req<-[execBy:ExecutedBy]-met<-[own:Own]-ser, wor-[execute:Execute]->req<-[thr?:ThrownBy]-err ${if (clause.nonEmpty) s"WHERE $clause" else ""} RETURN wor,req,met,ser,err"
+    val query = s"START poff=node:postalOffice('*:*') MATCH poff-[has:Own]->wor-[exe:Execute]->req<-[execBy:ExecutedBy]-met<-[own:Own]-ser, poff-[has:Own]->wor-[execute:Execute]->req<-[thr?:ThrownBy]-err ${if (clause.nonEmpty) s"WHERE $clause" else ""} RETURN wor,req,met,ser,err"
 
 
     logger.debug(s"requests query: $query")
@@ -78,7 +96,11 @@ trait MetricQueries extends GraphDB with Logging {
         onCreate = newMethodNode => addRelationship(serviceNode, newMethodNode, Own)
       )
 
-      val workstationNode = createOrLoadNode(WorkStationIndex((metric.frazionario, metric.pdl)), Map(Keys.workstationFrazionario -> metric.frazionario, Keys.workstationPdl -> metric.pdl))
+      val postalOfficeNode = createOrLoadNode(PostalOfficeIndex(metric.frazionario), Map(Keys.workstationFrazionario -> metric.frazionario))
+
+      val workstationNode = createOrLoadNode(WorkStationIndex((metric.frazionario, metric.pdl)), Map(Keys.workstationFrazionario -> metric.frazionario, Keys.workstationPdl -> metric.pdl),
+        onCreate = newWsNode => addRelationship(postalOfficeNode, newWsNode, Own)
+      )
 
       addRelationship(methodNode, requestNode, ExecutedBy)
       addRelationship(workstationNode, requestNode, Execute)

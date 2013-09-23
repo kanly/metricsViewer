@@ -14,13 +14,12 @@ import it.posteitaliane.omp.data._
 import it.posteitaliane.omp.UI.view.MetricsActor.{LoadMetrics, NeedData, FileUploaded, RegisterView}
 import com.vaadin.data.Property.ValueChangeEvent
 import it.posteitaliane.omp.UI.SessionActor.{LoadRequestViews, ViewChanged, Load, Updated}
-import it.posteitaliane.omp.data.Workstation
 import it.posteitaliane.omp.bl.ProductionEventSource.{UnregisterListener, RegisterListener}
 import it.posteitaliane.omp.data
 
 import it.posteitaliane.omp.UI.helper.Listeners._
 import it.posteitaliane.omp.UI.helper.Containers._
-import com.vaadin.data.util.IndexedContainer
+import com.vaadin.data.util.{HierarchicalContainer, IndexedContainer}
 import java.text.SimpleDateFormat
 import java.util.Date
 import scala.util.{Failure, Success}
@@ -39,19 +38,15 @@ class MetricsView extends VerticalLayout with BaseView {
 
   addComponent(upload)
 
-  val workstationsSelect = new ListSelect("workstations")
-  workstationsSelect.setRows(10)
-  workstationsSelect.setNullSelectionAllowed(true)
-  workstationsSelect.setImmediate(true)
-  workstationsSelect.setMultiSelect(true)
-  workstationsSelect.addValueChangeListener((event: ValueChangeEvent) => {
+  val wsTree = new TreeTable()
+  wsTree.setHeight(200, Sizeable.Unit.PIXELS)
+  wsTree.setMultiSelect(true)
+  wsTree.setSelectable(true)
+  wsTree.setImmediate(true)
+  wsTree.addValueChangeListener((event: ValueChangeEvent) => {
     logger.debug(s"Value changed to ${event.getProperty.getValue}")
     new Notification(s"Value changed to ${event.getProperty.getValue}", Notification.Type.TRAY_NOTIFICATION).show(Page.getCurrent)
-    actor ! LoadMetrics(ws = workstationsSelect.getScalaValue,
-      met = methodsSelect.getScalaValue,
-      ser = servicesSelect.getScalaValue,
-      err = errorsSelect.getScalaValue
-    )
+    loadMetrics()
   })
 
   val methodsSelect = new ListSelect("methods")
@@ -62,11 +57,7 @@ class MetricsView extends VerticalLayout with BaseView {
   methodsSelect.addValueChangeListener((event: ValueChangeEvent) => {
     logger.debug(s"Value changed to ${event.getProperty.getValue}")
     new Notification(s"Value changed to ${event.getProperty.getValue}", Notification.Type.TRAY_NOTIFICATION).show(Page.getCurrent)
-    actor ! LoadMetrics(ws = workstationsSelect.getScalaValue,
-      met = methodsSelect.getScalaValue,
-      ser = servicesSelect.getScalaValue,
-      err = errorsSelect.getScalaValue
-    )
+    loadMetrics()
   })
 
   val servicesSelect = new ListSelect("services")
@@ -77,11 +68,7 @@ class MetricsView extends VerticalLayout with BaseView {
   servicesSelect.addValueChangeListener((event: ValueChangeEvent) => {
     logger.debug(s"Value changed to ${event.getProperty.getValue}")
     new Notification(s"Value changed to ${event.getProperty.getValue}", Notification.Type.TRAY_NOTIFICATION).show(Page.getCurrent)
-    actor ! LoadMetrics(ws = workstationsSelect.getScalaValue,
-      met = methodsSelect.getScalaValue,
-      ser = servicesSelect.getScalaValue,
-      err = errorsSelect.getScalaValue
-    )
+    loadMetrics()
   })
 
   val errorsSelect = new ListSelect("errors")
@@ -92,26 +79,60 @@ class MetricsView extends VerticalLayout with BaseView {
   errorsSelect.addValueChangeListener((event: ValueChangeEvent) => {
     logger.debug(s"Value changed to ${event.getProperty.getValue}")
     new Notification(s"Value changed to ${event.getProperty.getValue}", Notification.Type.TRAY_NOTIFICATION).show(Page.getCurrent)
-    actor ! LoadMetrics(ws = workstationsSelect.getScalaValue,
-      met = methodsSelect.getScalaValue,
-      ser = servicesSelect.getScalaValue,
-      err = errorsSelect.getScalaValue
-    )
+    loadMetrics()
   })
-  addComponent(new HorizontalLayout(workstationsSelect, methodsSelect, servicesSelect, errorsSelect))
+  addComponent(new HorizontalLayout(wsTree, methodsSelect, servicesSelect, errorsSelect))
 
   def onEnter(event: ViewChangeEvent) {
     actor ! NeedData
   }
 
-  def updateWorkstations(app: Application, workstations: List[Workstation]) {
+  def loadMetrics() {
+    val workstations: Iterable[WorkstationView] = wsTree.getScalaValue
+
+    val wssView: Iterable[WorkstationView] = if (workstations.nonEmpty)
+      workstations.groupBy {
+        case WorkstationView(fraz, pdls) => fraz
+      }.map {
+        case (fraz, wsList) => {
+          val pdls = wsList.map(_.pdls).foldLeft(List[String]())((a, b) => a ++ b).filter(_.toInt >= 0)
+          WorkstationView(fraz, pdls)
+        }
+      }
+    else
+      Nil
+
+    actor ! LoadMetrics(ws = wssView,
+      met = methodsSelect.getScalaValue,
+      ser = servicesSelect.getScalaValue,
+      err = errorsSelect.getScalaValue
+    )
+  }
+
+  def updateWorkstations(app: Application, workstations: List[WorkstationView]) {
     app.access(new Runnable {
       def run() {
         logger.debug("Updating workstations")
-        workstationsSelect.removeAllItems()
+        val container = new HierarchicalContainer()
+        container.addContainerProperty("Workstation", classOf[String], "-")
+        container.addContainerProperty("ws", classOf[WorkstationView], null)
         workstations.foreach(ws => {
-          workstationsSelect.addItem(ws)
-          workstationsSelect.setItemCaption(ws, s"F:${ws.frazionario};P:${ws.pdl}")
+          val frazWs: WorkstationView = WorkstationView(ws.frazionario, Nil)
+          val frazItem = container.addItem(frazWs)
+          setPropValue(frazItem.getItemProperty("Workstation"), frazWs.frazionario)
+          setPropValue(frazItem.getItemProperty("ws"), frazWs)
+
+          ws.pdls.foreach(pdl => {
+            val pdlWs = WorkstationView(ws.frazionario, List(pdl))
+            val frazItem = container.addItem(pdlWs)
+            setPropValue(frazItem.getItemProperty("Workstation"), pdl)
+            setPropValue(frazItem.getItemProperty("ws"), pdlWs)
+            container.setParent(pdlWs, frazWs)
+            container.setChildrenAllowed(pdlWs, false)
+          })
+
+          wsTree.setContainerDataSource(container)
+          wsTree.setVisibleColumns("Workstation")
         })
       }
     })
@@ -228,7 +249,7 @@ class MetricsActor(app: Application) extends Actor with Logging {
       app.sessionActor ! Load(MethodData)
       app.sessionActor ! Load(ServiceData)
     }
-    case Updated(WorkstationData, wStations: List[Workstation@unchecked]) => view.updateWorkstations(app, wStations)
+    case Updated(WorkstationData, wStations: List[WorkstationView@unchecked]) => view.updateWorkstations(app, wStations)
     case Updated(ServiceData, services: List[Service@unchecked]) => view.updateServices(app, services)
     case Updated(MethodData, methods: List[Method@unchecked]) => view.updateMethods(app, methods)
     case Updated(ErrorData, errors: List[OmpError@unchecked]) => view.updateErrors(app, errors)
@@ -266,7 +287,7 @@ object MetricsActor {
 
   case class RegisterView(view: MetricsView)
 
-  case class LoadMetrics(ws: Iterable[Workstation] = Nil,
+  case class LoadMetrics(ws: Iterable[WorkstationView] = Nil,
                          met: Iterable[Method] = Nil,
                          ser: Iterable[Service] = Nil,
                          err: Iterable[OmpError] = Nil)
@@ -349,7 +370,6 @@ class DetailWindow(item: RequestView) extends Window {
 
   private val reqField = new TextArea("Request")
   reqField.setValue(item.request.request)
-  //reqField.setEnabled(false)
   reqField.setSizeFull()
   reqField.setRows(10)
   layout.addComponent(reqField)
@@ -358,7 +378,6 @@ class DetailWindow(item: RequestView) extends Window {
   def addTextField(caption: String, value: String) {
     val field = new TextField(caption)
     field.setValue(value)
-    //field.setEnabled(false)
     layout.addComponent(field)
   }
 
