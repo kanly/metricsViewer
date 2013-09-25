@@ -25,7 +25,7 @@ trait MetricQueries extends GraphDB with Logging {
       case (service, methods) => MethodView(service, methods.map {
         case (_, method) => method
       }.sorted)
-    }.toList
+    }.toList.sortBy(mv => mv.service)
 
   def loadErrors: List[OmpError] =
     loadElements("START err=node:error('*:*') RETURN err", Mapper.errorMapper("err"))
