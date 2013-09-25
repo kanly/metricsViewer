@@ -34,6 +34,12 @@ class MetricsView extends VerticalLayout with BaseView {
   val uploadReceiver = new MetricsHistoryUploader
   val upload = new Upload("Upload Metrics history file.", uploadReceiver)
   upload.addSucceededListener(uploadReceiver)
+
+  val loadMetricsTable = (event: ValueChangeEvent) => {
+    logger.debug(s"Value changed to ${event.getProperty.getValue}")
+    new Notification(s"Value changed to ${event.getProperty.getValue}", Notification.Type.TRAY_NOTIFICATION).show(Page.getCurrent)
+    loadMetrics()
+  }
   var metricTable: Table = null
 
   addComponent(upload)
@@ -43,34 +49,24 @@ class MetricsView extends VerticalLayout with BaseView {
   wsTree.setMultiSelect(true)
   wsTree.setSelectable(true)
   wsTree.setImmediate(true)
-  wsTree.addValueChangeListener((event: ValueChangeEvent) => {
-    logger.debug(s"Value changed to ${event.getProperty.getValue}")
-    new Notification(s"Value changed to ${event.getProperty.getValue}", Notification.Type.TRAY_NOTIFICATION).show(Page.getCurrent)
-    loadMetrics()
-  })
+  wsTree.addValueChangeListener(loadMetricsTable)
 
   val methodTree = new TreeTable()
   methodTree.setHeight(200, Sizeable.Unit.PIXELS)
   methodTree.setMultiSelect(true)
   methodTree.setSelectable(true)
   methodTree.setImmediate(true)
-  methodTree.addValueChangeListener((event: ValueChangeEvent) => {
-    logger.debug(s"Value changed to ${event.getProperty.getValue}")
-    new Notification(s"Value changed to ${event.getProperty.getValue}", Notification.Type.TRAY_NOTIFICATION).show(Page.getCurrent)
-    loadMetrics()
-  })
+  methodTree.addValueChangeListener(loadMetricsTable)
 
-  val errorsSelect = new ListSelect("errors")
-  errorsSelect.setRows(10)
-  errorsSelect.setNullSelectionAllowed(true)
-  errorsSelect.setImmediate(true)
-  errorsSelect.setMultiSelect(true)
-  errorsSelect.addValueChangeListener((event: ValueChangeEvent) => {
-    logger.debug(s"Value changed to ${event.getProperty.getValue}")
-    new Notification(s"Value changed to ${event.getProperty.getValue}", Notification.Type.TRAY_NOTIFICATION).show(Page.getCurrent)
-    loadMetrics()
-  })
-  addComponent(new HorizontalLayout(wsTree, methodTree, errorsSelect))
+  val errorTable = new Table()
+  errorTable.setHeight(200, Sizeable.Unit.PIXELS)
+  errorTable.setMultiSelect(true)
+  errorTable.setSelectable(true)
+  errorTable.setImmediate(true)
+  errorTable.addValueChangeListener(loadMetricsTable)
+
+  addComponent(new HorizontalLayout(wsTree, methodTree, errorTable))
+
 
   def onEnter(event: ViewChangeEvent) {
     actor ! NeedData
@@ -106,7 +102,7 @@ class MetricsView extends VerticalLayout with BaseView {
 
     actor ! LoadMetrics(ws = wssView,
       met = metView,
-      err = errorsSelect.getScalaValue
+      err = errorTable.getScalaValue
     )
   }
 
@@ -141,11 +137,15 @@ class MetricsView extends VerticalLayout with BaseView {
     app.access(new Runnable {
       def run() {
         logger.debug("Updating errors")
-        errorsSelect.removeAllItems()
-        errors.foreach(er => {
-          errorsSelect.addItem(er)
-          errorsSelect.setItemCaption(er, s"C: ${er.code}")
+        val container = new IndexedContainer()
+        container.addContainerProperty("Error", classOf[String], "-")
+
+        errors.foreach(err => {
+          val errorItem = container.addItem(err)
+          setPropValue(errorItem.getItemProperty("Error"), err.code)
         })
+        errorTable.setContainerDataSource(container)
+        errorTable.setVisibleColumns("Error")
       }
     })
   }
@@ -153,7 +153,7 @@ class MetricsView extends VerticalLayout with BaseView {
   def updateMethods(app: Application, methods: List[MethodView]) {
     app.access(new Runnable {
       def run() {
-        logger.debug(s"Updating methods ${methods.mkString}")
+        logger.debug(s"Updating methods")
         val container = new HierarchicalContainer()
         container.addContainerProperty("Method", classOf[String], "-")
 
