@@ -2,11 +2,11 @@ package it.posteitaliane.omp.UI
 
 import scala.concurrent.ExecutionContext.Implicits.global
 import akka.actor.{ActorRef, Props, Actor}
-import it.posteitaliane.omp.UI.UIActor.{Get, UploadingFile, NewSession}
+import it.posteitaliane.omp.UI.UIActor.{ClearAllData, Get, UploadingFile, NewSession}
 import it.posteitaliane.omp.bl.{ProductionEventSource, EventSource}
 import com.typesafe.scalalogging.slf4j.Logging
 import it.posteitaliane.omp.data.{DTO, Data}
-import it.posteitaliane.omp.bl.MetricViewer.{ListOfRequestViews, ListOf}
+import it.posteitaliane.omp.bl.MetricViewer.{DropData, ListOfRequestViews, ListOf}
 import it.posteitaliane.omp.Metrics
 import it.posteitaliane.omp.Metrics.GiveMeBE
 
@@ -30,6 +30,7 @@ class UIActor extends Actor with Logging {
     case du: DataUpdated[DTO@unchecked] => sendEvent(du)
     case LoadRequestViews(ws, met, err) =>
       (be ? ListOfRequestViews(ws, met, err)).pipeTo(sender)
+    case ClearAllData => be ! DropData
   }
 
   override def preStart() {
@@ -49,5 +50,7 @@ object UIActor {
   case class UploadingFile(filename: String)
 
   case class Get(data: Data)
+
+  case object ClearAllData
 
 }

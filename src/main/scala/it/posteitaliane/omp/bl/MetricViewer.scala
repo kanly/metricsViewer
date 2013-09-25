@@ -13,7 +13,7 @@ import scala.concurrent.duration._
 import it.posteitaliane.omp.data._
 import it.posteitaliane.omp.bl.ProductionEventSource.RegisterListener
 import it.posteitaliane.omp.bl.MetricGrapher.Save
-import it.posteitaliane.omp.bl.MetricViewer.{ListOfRequestViews, ListOf}
+import it.posteitaliane.omp.bl.MetricViewer.{DropData, ListOfRequestViews, ListOf}
 import it.posteitaliane.omp.bl.FileReader.ProcessFile
 import it.posteitaliane.omp.bl.FileReader.NewMetric
 import it.posteitaliane.omp.UI.UIActor.UploadingFile
@@ -32,6 +32,7 @@ class MetricViewer extends Actor with Logging {
     case ListOf(ErrorData) => (grapher ? LoadErrors).pipeTo(sender)
     case ListOf(MethodData) => (grapher ? LoadMethods).pipeTo(sender)
     case ListOfRequestViews(ws,met,err) => (grapher ? LoadRequests(ws,met,err)).pipeTo(sender)
+    case DropData => grapher ! Clear
 
   }
 
@@ -52,6 +53,8 @@ object MetricViewer {
   case class ListOfRequestViews(ws: Iterable[WorkstationView] = Nil,
                                 met: Iterable[MethodView] = Nil,
                                 err: Iterable[OmpError] = Nil)
+
+  case object DropData
 
 }
 

@@ -40,6 +40,10 @@ trait GraphDB extends Logging {
     node
   }
 
+  def cleanIndexes() {
+    MWIndex.values.foreach(index => indexFor(index).delete())
+  }
+
   def createOrLoadNode(index: MWIndex, properties: Map[String, String], onCreate: Node => Unit = Node => ()): Node = {
     val currIndex: Index[Node] = indexFor(index)
     val hits = currIndex.get(index.key, index.value)
@@ -105,17 +109,21 @@ sealed abstract class MWIndex(indexName: String, v: AnyRef) {
   val value = v
 }
 
-case class RequestIndex(request: String) extends MWIndex("request", request)
+object MWIndex {
+  val values = Set(RequestIndex(), MethodIndex(), ServiceIndex(), PostalOfficeIndex(), WorkStationIndex(), ErrorIndex())
+}
 
-case class MethodIndex(methodName: String) extends MWIndex("method", methodName)
+case class RequestIndex(request: String = "") extends MWIndex("request", request)
 
-case class ServiceIndex(serviceName: String) extends MWIndex("service", serviceName)
+case class MethodIndex(methodName: String = "") extends MWIndex("method", methodName)
 
-case class PostalOfficeIndex(frazionario: String) extends MWIndex("postalOffice", frazionario)
+case class ServiceIndex(serviceName: String = "") extends MWIndex("service", serviceName)
 
-case class WorkStationIndex(frazionarioPdl: (String, String)) extends MWIndex("workstation", frazionarioPdl)
+case class PostalOfficeIndex(frazionario: String = "") extends MWIndex("postalOffice", frazionario)
 
-case class ErrorIndex(code: String) extends MWIndex("error", code)
+case class WorkStationIndex(frazionarioPdl: (String, String) = ("", "")) extends MWIndex("workstation", frazionarioPdl)
+
+case class ErrorIndex(code: String = "") extends MWIndex("error", code)
 
 sealed abstract class RelTypes(relationshipName: String) extends RelationshipType {
   def name = relationshipName

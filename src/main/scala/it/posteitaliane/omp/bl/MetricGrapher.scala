@@ -15,6 +15,7 @@ class MetricGrapher extends Actor with Logging with MetricQueries {
     case LoadMethods => sender ! loadMethods
     case LoadErrors => sender ! loadErrors
     case LoadRequests(ws, met, err) => sender ! loadRequests(ws, met, err)
+    case Clear => drop()
     case du: DataUpdated[DTO@unchecked] => sendEvent(du)
   }
 }
@@ -35,5 +36,7 @@ object MetricGrapher {
   case class LoadRequests(ws: Iterable[WorkstationView] = Nil,
                           met: Iterable[MethodView] = Nil,
                           err: Iterable[OmpError] = Nil)
+
+  case object Clear
 
 }

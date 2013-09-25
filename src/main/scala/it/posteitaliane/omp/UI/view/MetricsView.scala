@@ -5,16 +5,14 @@ import scala.concurrent.ExecutionContext.Implicits.global
 import akka.pattern.ask
 import com.vaadin.ui._
 import com.vaadin.navigator.ViewChangeListener.ViewChangeEvent
-import java.io.{IOException, FileOutputStream, OutputStream}
 import com.vaadin.server.{Sizeable, Page}
-import akka.actor.{Props, Actor}
-import it.posteitaliane.omp.UI.{SessionActor, Application}
+import akka.actor.Props
+import it.posteitaliane.omp.UI.Application
 import com.typesafe.scalalogging.slf4j.Logging
 import it.posteitaliane.omp.data._
-import it.posteitaliane.omp.UI.view.MetricsActor.{LoadMetrics, NeedData, FileUploaded, RegisterView}
+import it.posteitaliane.omp.UI.view.MetricsActor.{LoadMetrics, NeedData}
 import com.vaadin.data.Property.ValueChangeEvent
-import it.posteitaliane.omp.UI.SessionActor.{LoadRequestViews, ViewChanged, Load, Updated}
-import it.posteitaliane.omp.bl.ProductionEventSource.{UnregisterListener, RegisterListener}
+import it.posteitaliane.omp.UI.SessionActor.{LoadRequestViews, Load, Updated}
 import it.posteitaliane.omp.data
 
 import it.posteitaliane.omp.UI.helper.Listeners._
@@ -28,12 +26,8 @@ import com.vaadin.data.Property
 
 class MetricsView extends VerticalLayout with BaseView {
   logger.debug("Instantiating MetricsView")
-  actor ! MetricsActor.RegisterView(this)
+
   setSizeFull()
-  implicit val currentView = this
-  val uploadReceiver = new MetricsHistoryUploader
-  val upload = new Upload("Upload Metrics history file.", uploadReceiver)
-  upload.addSucceededListener(uploadReceiver)
 
   val loadMetricsTable = (event: ValueChangeEvent) => {
     logger.debug(s"Value changed to ${event.getProperty.getValue}")
@@ -41,8 +35,6 @@ class MetricsView extends VerticalLayout with BaseView {
     loadMetrics()
   }
   var metricTable: Table = null
-
-  addComponent(upload)
 
   val wsTree = new TreeTable()
   wsTree.setHeight(200, Sizeable.Unit.PIXELS)
@@ -201,48 +193,8 @@ class MetricsView extends VerticalLayout with BaseView {
 
 }
 
-object MetricsView {
-  def filenameToFullPath(filename: String) = s"${System.getProperty("java.io.tmpdir")}/$filename"
-}
-
-class MetricsHistoryUploader(implicit val currentView: BaseView) extends Upload.Receiver with Upload.SucceededListener {
-  private var filename: String = null
-
-  def receiveUpload(filename: String, mimeType: String): OutputStream = {
-    try {
-      this.filename = filename
-      new FileOutputStream(MetricsView.filenameToFullPath(filename))
-    }
-    catch {
-      case e: IOException => {
-        new Notification("Could not open file <br/>", e.getMessage, Notification.Type.ERROR_MESSAGE).show(Page.getCurrent)
-        null
-      }
-    }
-  }
-
-  def uploadSucceeded(succeededEvent: Upload.SucceededEvent) {
-    new Notification("Upload succeeded to " + System.getProperty("java.io.tmpdir"), Notification.Type.TRAY_NOTIFICATION).show(Page.getCurrent)
-    currentView.actor ! FileUploaded(MetricsView.filenameToFullPath(filename))
-  }
-}
-
-
-class MetricsActor(app: Application) extends Actor with Logging {
-  def receive: Receive = waitingForView
-
-  def waitingForView: Receive = {
-    case RegisterView(view) => {
-      context.become(receiveForView(view))
-      app.sessionActor ! RegisterListener(self)
-    }
-  }
-
+class MetricsActor(app: Application) extends ViewActor[MetricsView](app) with Logging {
   def receiveForView(view: MetricsView): Receive = {
-    case FileUploaded(file) => {
-      logger.debug(s"Uploaded file [$file]. SessionActor: [${app.sessionActor}")
-      app.sessionActor ! SessionActor.FileReady(file)
-    }
     case NeedData => {
       app.sessionActor ! Load(WorkstationData)
       app.sessionActor ! Load(ErrorData)
@@ -252,13 +204,6 @@ class MetricsActor(app: Application) extends Actor with Logging {
     case Updated(MethodData, methods: List[MethodView@unchecked]) => view.updateMethods(app, methods)
     case Updated(ErrorData, errors: List[OmpError@unchecked]) => view.updateErrors(app, errors)
     case Updated(dataType, data) => logger.debug(s"Unmanaged updated data type: $dataType")
-    case ViewChanged(oldView, newView) => {
-      if (view.me.get != newView) {
-        logger.debug("changing view....")
-        context.become(waitingForView)
-        app.sessionActor ! UnregisterListener(self)
-      }
-    }
     case LoadMetrics(ws, met, err) => (app.sessionActor ? LoadRequestViews(ws, met, err)).mapTo[List[RequestView]] onComplete {
       case Success(result) => {
         logger.debug(s"Received ${result.size} metrics")
@@ -271,19 +216,10 @@ class MetricsActor(app: Application) extends Actor with Logging {
       }
     }
   }
-
-  override def preStart() {
-    app.sessionActor ! RegisterListener(self)
-  }
-
 }
 
 object MetricsActor {
   def props(app: Application) = Props(new MetricsActor(app))
-
-  case class FileUploaded(filename: String)
-
-  case class RegisterView(view: MetricsView)
 
   case class LoadMetrics(ws: Iterable[WorkstationView] = Nil,
                          met: Iterable[MethodView] = Nil,

@@ -3,11 +3,11 @@ package it.posteitaliane.omp.UI
 import com.vaadin.ui.MenuBar
 import com.vaadin.navigator.Navigator
 import com.vaadin.ui.MenuBar.Command
-import it.posteitaliane.omp.UI.view.{MetricsActor, MetricsView, HomeView, BaseView}
+import it.posteitaliane.omp.UI.view._
 import com.vaadin.navigator
 import akka.actor.{Actor, ActorRef}
-import it.posteitaliane.omp.UI.SessionActor.ViewChange
 import com.typesafe.scalalogging.slf4j.Logging
+import it.posteitaliane.omp.UI.SessionActor.ViewChange
 
 class Menu(navigator: Navigator) extends MenuBar {
   Views.views.foreach(v => addItem(v.name, NavigateTo(v, navigator)))
@@ -25,12 +25,12 @@ case class View(clazz: Class[_ <: BaseView], name: String, urlString: String, ac
 
 object Views {
   val HomeView = View(classOf[HomeView], "home", "index", {
-    (a: Actor, application:Application) => a.context.system.deadLetters
+    (a: Actor, application: Application) => a.context.actorOf(HomeActor.props(application))
   })
   val views: List[View] = List(
     HomeView,
     View(classOf[MetricsView], "metrics", "Metrics", {
-      (a: Actor, application:Application) => a.context.actorOf(MetricsActor.props(application))
+      (a: Actor, application: Application) => a.context.actorOf(MetricsActor.props(application))
     })
   )
 

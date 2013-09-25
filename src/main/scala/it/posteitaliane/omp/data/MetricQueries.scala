@@ -121,6 +121,22 @@ trait MetricQueries extends GraphDB with Logging {
     }
   }
 
+  def drop() {
+    beginTx()
+    try{
+
+      executeQuery("START poff=node:postalOffice('*:*') MATCH poff-[has:Own]->wor DELETE poff, has")
+      executeQuery("START wor=node:workstation('*:*') MATCH wor-[exe:Execute]->req DELETE wor, exe")
+      executeQuery("START err=node:error('*:*') MATCH err-[thr:ThrownBy]->req DELETE err, thr")
+      executeQuery("START ser=node:service('*:*') MATCH ser-[own:Own]->met-[execBy:ExecutedBy]->req DELETE ser, own, met, execBy, req")
+
+      cleanIndexes()
+      successTx()
+    } finally {
+      finishTx()
+    }
+  }
+
   def createRequestNode(metric: Metric) = createNode(Map(
     Keys.request -> metric.request,
     Keys.requestStart -> Long.box(metric.startTime),

@@ -52,6 +52,7 @@ class SessionActor(ui: ActorRef, currApplication: Application) extends Actor wit
     case UploadingFile(_) => currApplication.notify("A new history file is being uploaded and processed")
     case DataUpdated(dataType, data) => sendEvent(Updated(dataType, data))
     case LoadRequestViews(ws, met, err) => (ui ? LoadRequestViews(ws, met, err)).pipeTo(sender)
+    case unmanagedMessage => ui forward unmanagedMessage
   }
 
   override def preStart() {
