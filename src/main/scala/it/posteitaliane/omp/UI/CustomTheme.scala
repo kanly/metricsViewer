@@ -1,17 +1,10 @@
 package it.posteitaliane.omp.UI
 
-/**
- * Created with IntelliJ IDEA.
- * User: kanly
- * Date: 7/25/13
- * Time: 10:51 AM
- * To change this template use File | Settings | File Templates.
- */
 object CustomTheme {
   final val ViewTitle = "viewTitle"
 
   /* FROM RUNO THEME */
-  final val ThemeName = "runo"
+  final val ThemeName = "metrics"
   final val ButtonSmall = "small"
   val ButtonBig = "big"
   val ButtonDefault = "default"
