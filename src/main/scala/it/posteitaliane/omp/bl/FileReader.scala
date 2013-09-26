@@ -4,8 +4,6 @@ import akka.actor.{Props, ActorRef, Actor}
 import it.posteitaliane.omp.bl.FileReader._
 import java.io.{File, RandomAccessFile}
 import com.typesafe.scalalogging.slf4j.Logging
-import com.fasterxml.jackson.module.scala.DefaultScalaModule
-import com.fasterxml.jackson.databind.{DeserializationFeature, ObjectMapper}
 import it.posteitaliane.omp.bl.FileReader.FileParsed
 import it.posteitaliane.omp.bl.JSONProcessor.LineRead
 import it.posteitaliane.omp.bl.JSONProcessor.Line

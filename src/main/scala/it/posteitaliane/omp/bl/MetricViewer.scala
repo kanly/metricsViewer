@@ -31,7 +31,7 @@ class MetricViewer extends Actor with Logging {
     case ListOf(WorkstationData) => (grapher ? LoadWorkstations).pipeTo(sender)
     case ListOf(ErrorData) => (grapher ? LoadErrors).pipeTo(sender)
     case ListOf(MethodData) => (grapher ? LoadMethods).pipeTo(sender)
-    case ListOfRequestViews(ws,met,err) => (grapher ? LoadRequests(ws,met,err)).pipeTo(sender)
+    case ListOfRequestViews(ws, met, err) => (grapher ? LoadRequests(ws, met, err)).pipeTo(sender)
     case DropData => grapher ! Clear
 
   }

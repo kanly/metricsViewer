@@ -41,7 +41,7 @@ trait BaseView extends View with Logging {
 
 case class UnregisteredView extends java.lang.Error
 
-abstract class ViewActor[V <: BaseView](app: Application) extends Actor with Logging{
+abstract class ViewActor[V <: BaseView](app: Application) extends Actor with Logging {
   def receive: Receive = waitingForView
 
   def waitingForView: Receive = {
@@ -51,7 +51,7 @@ abstract class ViewActor[V <: BaseView](app: Application) extends Actor with Log
     }
   }
 
-  def viewChange(view:V):Receive = {
+  def viewChange(view: V): Receive = {
     case ViewChanged(oldView, newView) => {
       if (view.me.get != newView) {
         logger.debug("changing view....")

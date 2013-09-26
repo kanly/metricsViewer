@@ -123,7 +123,7 @@ trait MetricQueries extends GraphDB with Logging {
 
   def drop() {
     beginTx()
-    try{
+    try {
 
       executeQuery("START poff=node:postalOffice('*:*') MATCH poff-[has:Own]->wor DELETE poff, has")
       executeQuery("START wor=node:workstation('*:*') MATCH wor-[exe:Execute]->req DELETE wor, exe")

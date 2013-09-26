@@ -28,10 +28,10 @@ class MetricsView extends VerticalLayout with BaseView {
   logger.debug("Instantiating MetricsView")
 
   setSizeFull()
-  val left=new VerticalLayout()
-  val right=new HorizontalLayout()
+  val left = new VerticalLayout()
+  val right = new HorizontalLayout()
   private val splitPanel: HorizontalSplitPanel = new HorizontalSplitPanel(left, right)
-  splitPanel.setSplitPosition(300,Sizeable.Unit.PIXELS)
+  splitPanel.setSplitPosition(300, Sizeable.Unit.PIXELS)
   splitPanel.setLocked(true)
   splitPanel.addStyleName(CustomTheme.SplitpanelSmall)
   addComponent(splitPanel)
@@ -46,7 +46,7 @@ class MetricsView extends VerticalLayout with BaseView {
 
   val wsTree = new TreeTable()
   wsTree.setHeight(200, Sizeable.Unit.PIXELS)
-  wsTree.setWidth(250,Sizeable.Unit.PIXELS)
+  wsTree.setWidth(250, Sizeable.Unit.PIXELS)
   wsTree.setMultiSelect(true)
   wsTree.setSelectable(true)
   wsTree.setImmediate(true)
@@ -54,7 +54,7 @@ class MetricsView extends VerticalLayout with BaseView {
 
   val methodTree = new TreeTable()
   methodTree.setHeight(200, Sizeable.Unit.PIXELS)
-  methodTree.setWidth(250,Sizeable.Unit.PIXELS)
+  methodTree.setWidth(250, Sizeable.Unit.PIXELS)
   methodTree.setMultiSelect(true)
   methodTree.setSelectable(true)
   methodTree.setImmediate(true)
@@ -62,13 +62,13 @@ class MetricsView extends VerticalLayout with BaseView {
 
   val errorTable = new Table()
   errorTable.setHeight(200, Sizeable.Unit.PIXELS)
-  errorTable.setWidth(250,Sizeable.Unit.PIXELS)
+  errorTable.setWidth(250, Sizeable.Unit.PIXELS)
   errorTable.setMultiSelect(true)
   errorTable.setSelectable(true)
   errorTable.setImmediate(true)
   errorTable.addValueChangeListener(loadMetricsTable)
 
-  left.addComponents(wsTree,methodTree,errorTable)
+  left.addComponents(wsTree, methodTree, errorTable)
 
   def onEnter(event: ViewChangeEvent) {
     actor ! NeedData
