@@ -31,11 +31,15 @@ class MetricsView extends VerticalLayout with BaseView {
   val left = new VerticalLayout()
   val right = new HorizontalLayout()
   private val splitPanel: HorizontalSplitPanel = new HorizontalSplitPanel(left, right)
-  splitPanel.setSplitPosition(300, Sizeable.Unit.PIXELS)
+  splitPanel.setSplitPosition(260, Sizeable.Unit.PIXELS)
   splitPanel.setLocked(true)
   splitPanel.addStyleName(CustomTheme.SplitpanelSmall)
   addComponent(splitPanel)
-
+  left.setDefaultComponentAlignment(Alignment.MIDDLE_CENTER)
+  right.setDefaultComponentAlignment(Alignment.MIDDLE_CENTER)
+  splitPanel.setSizeFull()
+  left.setSizeFull()
+  right.setSizeFull()
 
   val loadMetricsTable = (event: ValueChangeEvent) => {
     logger.debug(s"Value changed to ${event.getProperty.getValue}")
@@ -45,27 +49,30 @@ class MetricsView extends VerticalLayout with BaseView {
   var metricTable: Table = null
 
   val wsTree = new TreeTable()
-  wsTree.setHeight(200, Sizeable.Unit.PIXELS)
-  wsTree.setWidth(250, Sizeable.Unit.PIXELS)
+  wsTree.setHeight(180, Sizeable.Unit.PIXELS)
+  wsTree.setWidth(230, Sizeable.Unit.PIXELS)
   wsTree.setMultiSelect(true)
   wsTree.setSelectable(true)
   wsTree.setImmediate(true)
+  wsTree.addStyleName("metrics-request-filter")
   wsTree.addValueChangeListener(loadMetricsTable)
 
   val methodTree = new TreeTable()
-  methodTree.setHeight(200, Sizeable.Unit.PIXELS)
-  methodTree.setWidth(250, Sizeable.Unit.PIXELS)
+  methodTree.setHeight(180, Sizeable.Unit.PIXELS)
+  methodTree.setWidth(230, Sizeable.Unit.PIXELS)
   methodTree.setMultiSelect(true)
   methodTree.setSelectable(true)
   methodTree.setImmediate(true)
+  methodTree.addStyleName("metrics-request-filter")
   methodTree.addValueChangeListener(loadMetricsTable)
 
   val errorTable = new Table()
-  errorTable.setHeight(200, Sizeable.Unit.PIXELS)
-  errorTable.setWidth(250, Sizeable.Unit.PIXELS)
+  errorTable.setHeight(180, Sizeable.Unit.PIXELS)
+  errorTable.setWidth(230, Sizeable.Unit.PIXELS)
   errorTable.setMultiSelect(true)
   errorTable.setSelectable(true)
   errorTable.setImmediate(true)
+  errorTable.addStyleName("metrics-request-filter")
   errorTable.addValueChangeListener(loadMetricsTable)
 
   left.addComponents(wsTree, methodTree, errorTable)
@@ -186,7 +193,8 @@ class MetricsView extends VerticalLayout with BaseView {
 
       def run() {
         logger.debug("Creating metricsTable")
-        val newTable = new Table("Requests", MetricsContainer(requests))
+        val newTable = new Table()
+        newTable.setContainerDataSource(MetricsContainer(requests))
         newTable.setEnabled(true)
         newTable.addItemClickListener((event: ItemClickEvent) => {
           val property: Property[RequestView] = event.getItem.getItemProperty(MetricsContainer.fullBeanKey)
@@ -194,6 +202,7 @@ class MetricsView extends VerticalLayout with BaseView {
           UI.getCurrent.addWindow(window)
         })
         newTable.setVisibleColumns(wsKey, methodKey, serviceKey, errorKey, stKey, etKey, layerKey, successKey)
+        newTable.setSizeFull()
         right.replaceComponent(metricTable, newTable)
         metricTable = newTable
         logger.debug("Table created")

@@ -1,7 +1,11 @@
 @import "../runo/runo.scss";
 
-@mixin mytheme {
+@mixin metrics {
   @include runo;
 
-  /* Insert your theme rules here */
+  .v-slot-metrics-request-filter {
+    max-height: 250px;
+    display: inline-block;
+    min-height: 206px;
+  }
 }

@@ -22,6 +22,7 @@ class Application extends UI with Logging {
   val headerLayout = new VerticalLayout
   val contentLayout = new VerticalLayout
   val navigator = new Navigator(this, contentLayout)
+  contentLayout.setSizeFull()
   logger.debug(s"Application.uiActor=${Application.uiActor}")
 
   lazy val sessionActor = {
