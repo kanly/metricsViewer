@@ -7,7 +7,7 @@ import com.vaadin.ui._
 import com.vaadin.navigator.ViewChangeListener.ViewChangeEvent
 import com.vaadin.server.{Sizeable, Page}
 import akka.actor.Props
-import it.posteitaliane.omp.UI.Application
+import it.posteitaliane.omp.UI.{CustomTheme, Application}
 import com.typesafe.scalalogging.slf4j.Logging
 import it.posteitaliane.omp.data._
 import it.posteitaliane.omp.UI.view.MetricsActor.{LoadMetrics, NeedData}
@@ -28,6 +28,14 @@ class MetricsView extends VerticalLayout with BaseView {
   logger.debug("Instantiating MetricsView")
 
   setSizeFull()
+  val left=new VerticalLayout()
+  val right=new HorizontalLayout()
+  private val splitPanel: HorizontalSplitPanel = new HorizontalSplitPanel(left, right)
+  splitPanel.setSplitPosition(300,Sizeable.Unit.PIXELS)
+  splitPanel.setLocked(true)
+  splitPanel.addStyleName(CustomTheme.SplitpanelSmall)
+  addComponent(splitPanel)
+
 
   val loadMetricsTable = (event: ValueChangeEvent) => {
     logger.debug(s"Value changed to ${event.getProperty.getValue}")
@@ -38,6 +46,7 @@ class MetricsView extends VerticalLayout with BaseView {
 
   val wsTree = new TreeTable()
   wsTree.setHeight(200, Sizeable.Unit.PIXELS)
+  wsTree.setWidth(250,Sizeable.Unit.PIXELS)
   wsTree.setMultiSelect(true)
   wsTree.setSelectable(true)
   wsTree.setImmediate(true)
@@ -45,6 +54,7 @@ class MetricsView extends VerticalLayout with BaseView {
 
   val methodTree = new TreeTable()
   methodTree.setHeight(200, Sizeable.Unit.PIXELS)
+  methodTree.setWidth(250,Sizeable.Unit.PIXELS)
   methodTree.setMultiSelect(true)
   methodTree.setSelectable(true)
   methodTree.setImmediate(true)
@@ -52,13 +62,13 @@ class MetricsView extends VerticalLayout with BaseView {
 
   val errorTable = new Table()
   errorTable.setHeight(200, Sizeable.Unit.PIXELS)
+  errorTable.setWidth(250,Sizeable.Unit.PIXELS)
   errorTable.setMultiSelect(true)
   errorTable.setSelectable(true)
   errorTable.setImmediate(true)
   errorTable.addValueChangeListener(loadMetricsTable)
 
-  addComponent(new HorizontalLayout(wsTree, methodTree, errorTable))
-
+  left.addComponents(wsTree,methodTree,errorTable)
 
   def onEnter(event: ViewChangeEvent) {
     actor ! NeedData
@@ -184,7 +194,7 @@ class MetricsView extends VerticalLayout with BaseView {
           UI.getCurrent.addWindow(window)
         })
         newTable.setVisibleColumns(wsKey, methodKey, serviceKey, errorKey, stKey, etKey, layerKey, successKey)
-        replaceComponent(metricTable, newTable)
+        right.replaceComponent(metricTable, newTable)
         metricTable = newTable
         logger.debug("Table created")
       }
