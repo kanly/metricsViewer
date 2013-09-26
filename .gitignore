@@ -11,4 +11,8 @@
 /target/
 
 #Vaadin widgetsets
-src/main/webapp/VAADIN/
+src/main/webapp/VAADIN/widgetsets
+src/main/webapp/VAADIN/gwt-unitCache
+
+#compiled css
+src/main/webapp/VAADIN/themes/*/*.css

@@ -1,0 +1,7 @@
+@import "../runo/runo.scss";
+
+@mixin mytheme {
+  @include runo;
+
+  /* Insert your theme rules here */
+}

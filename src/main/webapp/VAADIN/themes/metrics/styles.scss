@@ -1,0 +1,8 @@
+@import "addons.scss";
+@import "metrics.scss";
+
+.metrics {
+  @include addons;
+
+  @include mytheme;
+}
