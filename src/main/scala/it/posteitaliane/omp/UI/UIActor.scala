@@ -20,6 +20,8 @@ import it.posteitaliane.omp.UI.SessionActor.LoadRequestViews
 class UIActor extends Actor with Logging {
   this: EventSource =>
 
+  val exCont = global // Using this to make the import useful for intellij so it will not remove import when optimizing (in other places this is not needed...)
+
   lazy val be = Await.result((Metrics.director ? GiveMeBE).mapTo[ActorRef], 2.second)
 
   def receive = eventSourceReceiver orElse {

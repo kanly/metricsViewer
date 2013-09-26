@@ -25,6 +25,8 @@ class MetricViewer extends Actor with Logging {
   var grapher: ActorRef = context.system.deadLetters
   lazy val ui: ActorRef = Await.result((Metrics.director ? GiveMeUI).mapTo[ActorRef], 2.second)
 
+  val exCont = global // Using this to make the import useful for intellij so it will not remove import when optimizing (in other places this is not needed...)
+
   def receive = eventSourceReceiver orElse {
     case NewMetric(metric) => grapher ! Save(metric)
     case UploadingFile(filename) => reader ! ProcessFile(filename)
