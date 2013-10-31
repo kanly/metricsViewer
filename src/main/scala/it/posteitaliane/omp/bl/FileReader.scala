@@ -36,7 +36,7 @@ class FileReader extends Actor with Logging {
   }
 
   override def preStart() {
-    lineProcessor = context.actorOf(JSONProcessor.props)
+    lineProcessor = context.actorOf(JSONProcessor.props,"jsonizer")
     lineProcessor ! RegisterListener(self)
   }
 

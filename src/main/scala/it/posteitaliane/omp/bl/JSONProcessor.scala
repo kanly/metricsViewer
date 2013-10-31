@@ -6,6 +6,7 @@ import com.fasterxml.jackson.databind.{DeserializationFeature, ObjectMapper}
 import com.fasterxml.jackson.module.scala.DefaultScalaModule
 import it.posteitaliane.omp.data.Metric
 import it.posteitaliane.omp.bl.JSONProcessor.{Line, LineRead}
+import akka.routing.FromConfig
 
 class JSONProcessor extends Actor with Logging {
   this: EventSource =>

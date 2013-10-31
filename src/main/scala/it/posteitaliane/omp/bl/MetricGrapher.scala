@@ -6,6 +6,7 @@ import com.typesafe.scalalogging.slf4j.Logging
 import it.posteitaliane.omp.bl.MetricGrapher._
 import it.posteitaliane.omp.bl.MetricGrapher.Save
 import it.posteitaliane.omp.data.Metric
+import akka.routing.FromConfig
 
 class MetricGrapher extends Actor with Logging with MetricQueries {
   this: EventSource =>
