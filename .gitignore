@@ -7,6 +7,10 @@
 /*.iws
 *.sc
 
+# Sbt
+/project/project
+/project/target
+
 # Maven
 /target/
 
